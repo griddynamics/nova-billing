@@ -59,6 +59,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
+%doc README
 %{_initrddir}/*
 %{python_sitelib}/%{mod_name}*
 %{_usr}/bin/*

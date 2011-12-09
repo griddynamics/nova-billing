@@ -1,0 +1,32 @@
+The billing server stores instance start/terminate information in a database and proveides access through REST API.
+
+By default, the billing server uses /var/lib/nova/nova_billing.sqlite database (parameter billing_sql_connection)
+and port 8787 (parameter billing_listen_port) that can be changed in /etc/nova/nova.conf.
+The server saves logs to /var/log/nova/nova-billing.log.
+
+Quickstart
+Build the package :)
+
+Install the package:
+    # yum install openstack-nova-billing
+
+Start the server:
+    # /etc/init.d/openstack-nova-billing start
+
+Start or stop instances and test the server:
+    $ curl 'http://localhost:8787/billing?project_id=systenant&start=2011-12-08T08%3A59%3A00'|python -mjson.tool
+{
+    "items": [
+        {
+            "datetime": "2011-12-08 08:59:48.676596", 
+            "event": "run", 
+            "instance_id": 49, 
+            "instance_type": "m1.small", 
+            "project_id": "systenant", 
+            "user_id": "admin"
+        }
+    ]
+}
+
+You can combine project_id, user_id, instance_id, and event in the query as far as start and end parameters.
+You could omit all parameters to retrieve all the data without filtering.
