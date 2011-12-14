@@ -29,6 +29,7 @@ import time
 from datetime import datetime
 
 import eventlet
+import json
 
 import kombu
 import kombu.entity
@@ -40,6 +41,7 @@ from nova import flags
 from nova import log as logging
 
 from nova_billing.db.sqlalchemy import api
+from nova_billing.db.sqlalchemy import models
 
 
 LOG = logging.getLogger("nova_billing.amqp_listener")
@@ -85,32 +87,62 @@ class Service(object):
             LOG.exception("cannot handle message")
         message.ack()
 
-    def save_instance_info(self, inst_info, message):
-        if inst_info.get("method", None) == "run_instance":
-            instance_properties = inst_info["args"]["request_spec"]["instance_properties"]
-            event_attrs = {
-                "project_id": instance_properties["project_id"],
-                "user_id": instance_properties["user_id"],
-                "instance_id": inst_info["args"]["instance_id"],
-                "instance_type": inst_info["args"]["request_spec"]["instance_type"]["name"],
+    def save_instance_info(self, body, message):
+        method = body.get("method", None)
+        instance_segment = None
+        descr = ""
+        if method == "run_instance":
+            instance_info = {
+                "project_id": body["args"]["request_spec"]
+                    ["instance_properties"]["project_id"],
+                "instance_id": body["args"]["instance_id"],
             }
-            is_start = True
-        elif inst_info.get("method", None) == "terminate_instance":
-            event_attrs = {"instance_id": inst_info["args"]["instance_id"]}
-            is_start = False
+            instance_type = body["args"]["request_spec"]["instance_type"]
+            for key in "local_gb", "memory_mb", "vcpus":
+                instance_info[key] = instance_type[key]
+            instance_info_ref = api.instance_info_create(instance_info)
+
+            instance_segment = {
+                "instance_info_id": instance_info_ref.id,
+                "segment_type": models.InstanceSegment.TYPE_ACTIVE,
+            }
+
+            descr = " instance info %s" % json.dumps(instance_info)
+        elif method == "stop_instance":
+            instance_segment = {
+                "segment_type": models.InstanceSegment.TYPE_STOPPED,
+            }
+        elif method == "unpause_instance":
+            instance_segment = {
+                "segment_type": models.InstanceSegment.TYPE_ACTIVE,
+            }
+        elif method == "pause_instance":
+            instance_segment = {
+                "segment_type": models.InstanceSegment.TYPE_PAUSED,
+            }
+        elif method == "suspend_instance":
+            instance_segment = {
+                "segment_type": models.InstanceSegment.TYPE_SUSPENDED,
+            }
+        elif method == "resume_instance":
+            instance_segment = {
+                "segment_type": models.InstanceSegment.TYPE_ACTIVE,
+            }
+        elif method == "terminate_instance":
+            pass
         else:
             return
 
+        api.instance_segment_end(body["args"]["instance_id"], datetime.utcnow())
+        if instance_segment:
+            instance_segment["begin_at"] = datetime.utcnow()
+            if not instance_segment.has_key("instance_info_id"):
+                instance_segment["instance_info_id"] = \
+                    api.instance_info_get_latest(body["args"]["instance_id"])
+            api.instance_segment_create(instance_segment)
+
         routing_key = message.delivery_info["routing_key"]
-        descr = "routing_key=%s %s" % (routing_key, ("start" if is_start else "end"))
-        for attr in event_attrs:
-            descr += " %s=%s" % (attr, event_attrs[attr])
-        if is_start:
-            event_attrs["start_at"] = datetime.utcnow()
-            api.instance_life_create(event_attrs)
-        else:
-            api.instance_life_end(event_attrs["instance_id"], datetime.utcnow())
-        LOG.debug(descr)
+        LOG.debug("routing_key=%s method=%s%s" % (routing_key, method, descr))
 
     def consume(self):
         with kombu.messaging.Consumer(

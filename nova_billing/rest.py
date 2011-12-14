@@ -43,15 +43,12 @@ flags.DEFINE_string("billing_listen", "0.0.0.0",
 flags.DEFINE_integer("billing_listen_port", 8787, "Billing API port")
 
 
-def instance_event_dict(instance_event):
-    ret = {"datetime": str(instance_event.datetime)}
-    for attr in ("user_id",
-               "project_id",
-               "instance_id",
-               "instance_type",
-               "event"):
-        ret[attr] = getattr(instance_event, attr)
-    return ret
+def datetime_to_str(dt):
+    """
+    Convert datetime.datetime instance to string
+    Used for JSONization
+    """
+    return dt.isoformat()
 
 
 class BillingController(object):
@@ -62,39 +59,87 @@ class BillingController(object):
     @webob.dec.wsgify
     def __call__(self, req):
         """
-        Call the method specified in req.environ by RoutesMiddleware.
+        Parse arguments, ask db api, and return JSON report
         """
         arg_dict = req.environ['wsgiorg.routing_args'][1]
-        print arg_dict
-        
         year = int(arg_dict["year"])
-        granularity = "y"
+        duration = "year"
         try:
             month = int(arg_dict["month"])
-            granularity = "m"
+            duration = "month"
         except KeyError:
             month = 1
         try:
             day = int(arg_dict["day"])
-            granularity = "d"
+            duration = "day"
         except KeyError:
             day = 1
 
-        int_start = datetime.datetime(year=year, month=month, day=day)
-        if granularity == "d":
-            int_stop = int_start + datetime.timedelta(days=1)
+        period_start = datetime.datetime(year=year, month=month, day=day)
+        if duration.startswith("d"):
+            period_stop = period_start + datetime.timedelta(days=1)
         else:
-            if granularity == "m":
+            if duration.startswith("m"):
                 month += 1
                 if month > 12:
                     month = 1
                     year += 1
             else:
                 year += 1
-            int_stop = datetime.datetime(year=year, month=month, day=day)
-        print "%s - %s" % (int_start, int_stop)
-        api.instance_on_interval(None, int_start, int_stop)
-        return "hello\n"
+            period_stop = datetime.datetime(year=year, month=month, day=day)
+        print "%s - %s" % (period_start, period_stop)
+        project_id = arg_dict.get("project", None)
+        #FIXME: wait for implementation
+        #total_statistics = api.instances_on_interval(period_start, period_stop, project_id)
+        #FIXME: total_statistics for debug:
+        now = datetime.datetime.now()
+        total_statistics = {
+            "systenant": {
+                 "12": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
+                 "14": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
+            },
+            "tenant12": {
+                 "54": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
+                 "67": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
+                 "64": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
+            }
+        }
+
+        show_instances = True
+        projects = {}
+        for project_id, project_statistics in total_statistics.items():
+            instances = {}
+            project_dict = {
+                "name": project_id,
+                "url": "http://%s:%s/projects/%s" %
+                    (req.environ["SERVER_NAME"],
+                     req.environ["SERVER_PORT"],
+                     project_id),
+                "instances_count": len(project_statistics),
+            }
+            for key in "running", "price":
+                project_dict[key] = 0
+            for instance_id, instance_statistics in project_statistics.items():
+                for key in "running", "price":
+                    project_dict[key] += instance_statistics[key]
+                if show_instances:
+                    instance_dict = {"name": instance_id}
+                    for key in "running", "price":
+                        instance_dict[key] = instance_statistics[key]
+                    for key in "created_at", "destroyed_at":
+                        instance_dict[key] = datetime_to_str(instance_statistics[key])
+                    instances[instance_id] = instance_dict
+
+            if show_instances:
+                project_dict["instances"] = instances
+            projects[project_id] = project_dict
+        ans_dict = {
+            "date": datetime_to_str(period_start),
+            "duration": duration,
+            "projects": projects
+        }
+        return webob.Response(json.dumps(ans_dict),
+                              content_type='application/json')
 
 
 class BillingApplication(base_wsgi.Router):

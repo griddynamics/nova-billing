@@ -29,6 +29,8 @@ from datetime import datetime
 from nova_billing.db.sqlalchemy import models
 from nova_billing.db.sqlalchemy.session import get_session, get_engine
 
+from sqlalchemy.sql import func, and_, or_
+
 from nova import flags
 from nova import utils
 
@@ -50,27 +52,57 @@ def _parse_datetime(dtstr):
     return None
 
 
-def instance_life_create(values, session=None):
-    instance_life_end(values["instance_id"], values["start_at"])
-    instance_life_ref = models.InstanceLife()
-    instance_life_ref.update(values)
-    instance_life_ref.save(session=session)
-    return instance_life_ref
+def instance_info_create(values, session=None):
+    instance_info_ref = models.InstanceInfo()
+    instance_info_ref.update(values)
+    instance_info_ref.save(session=session)
+    return instance_info_ref
 
 
-def instance_life_get(self, id, session=None):
+def instance_info_get(self, id, session=None):
     if not session:
         session = get_session()
-    result = session.query(models.InstanceLife).filter_by(id=id).first()
+    result = session.query(models.InstanceInfo).filter_by(id=id).first()
     return result
 
 
-def instance_life_end(instance_id, stop_at, session=None):
+def instance_segment_create(values, session=None):
+    instance_segment_ref = models.InstanceSegment()
+    instance_segment_ref.update(values)
+    instance_segment_ref.save(session=session)
+    return instance_segment_ref
+
+
+def instance_info_get_latest(instance_id, session=None):
     if not session:
         session = get_session()
-    session.commit()
-    instance_life_ref = session.query(models.InstanceLife).\
-        filter_by(instance_id=id, stop_at=None).update({"stop_at": stop_at})
+    result = session.query(func.max(models.InstanceInfo.id)).\
+        filter_by(instance_id=instance_id).first()
+    return result[0]
+
+
+def instance_segment_end(instance_id, end_at, session=None):
+    if not session:
+        session = get_session()
+    connection = get_session().connection()
+    connection.execute("""
+        update %(instance_segment)s set end_at = ?
+        where instance_info_id in
+        (select id from %(instance_info)s where instance_id = ?)
+        """ %
+        {"instance_segment": models.InstanceSegment.__tablename__,
+         "instance_info": models.InstanceInfo.__tablename__},
+        end_at,
+        instance_id
+    )
+
+
+def instance_segment_on_interval(period_start, period_stop, project_id=None):
+    result = session.query(models.InstanceSegment).\
+        filter(and_(models.InstanceSegment.begin_at <= period_stop,
+                    or_(models.InstanceSegment.end_at is None,
+                        models.InstanceSegment.end_at >= period_start)))
+    return result
 
 
 def instances_on_interval(period_start, period_stop, project_id=None):
@@ -90,10 +122,10 @@ def instances_on_interval(period_start, period_stop, project_id=None):
         select instance_id, sum(
             (julianday(case when stop_at is NULL or stop_at > ? then ? else stop_at end) - 
             julianday(case when ? > start_at then ? else start_at end)) * %(instance_types)s.price) as total_price
-        from %(instance_life)s inner join %(instance_types)s on (%(instance_life)s.instance_type_id = %(instance_types)s.id) 
+        from %(instance_info)s inner join %(instance_types)s on (%(instance_info)s.instance_type_id = %(instance_types)s.id) 
         where start_at <= ? and (stop_at is NULL or stop_at >= ?)
         group by instance_id
-        """  % {"instance_life": models.InstanceLife.__tablename__,
+        """  % {"instance_info": models.InstanceInfo.__tablename__,
                 "instance_types": models.InstanceTypes.__tablename__},
         int_stop, int_stop,
         int_start, int_start,
@@ -103,40 +135,13 @@ def instances_on_interval(period_start, period_stop, project_id=None):
         """
         select instance_id, 
             julianday(stop_at) as total_price
-        from %(instance_life)s inner join %(instance_types)s on (%(instance_life)s.instance_type_id = %(instance_types)s.id) 
+        from %(instance_info)s inner join %(instance_types)s on (%(instance_info)s.instance_type_id = %(instance_types)s.id) 
         where start_at <= ? and (stop_at is NULL or stop_at >= ?)
         
-        """  % {"instance_life": models.InstanceLife.__tablename__,
+        """  % {"instance_info": models.InstanceInfo.__tablename__,
                 "instance_types": models.InstanceTypes.__tablename__},
         int_stop, int_start)
     
     for row in result:
         print "%s - %s" % (row["instance_id"], row["total_price"])
     result.close()
-
-
-def instance_life_filter(filter, session=None):
-    if not session:
-        session = get_session()
-    query = session.query(models.InstanceLife)
-
-    filter_fields = ("user_id",
-               "project_id",
-               "instance_id",
-               "instance_type",
-               "event")
-    filter_dict = {}
-    for field in filter_fields:
-        if field in filter:
-            filter_dict[field] = filter[field]
-
-    if filter_dict:
-        query = query.filter_by(**filter_dict)
-    date = _parse_datetime(filter.get("start", None))
-    if date:
-        query = query.filter(models.InstanceLife.datetime>=date)
-    date = _parse_datetime(filter.get("end", None))
-    if date:
-        query = query.filter(models.InstanceLife.datetime<=date)
-    result = query.all()
-    return result

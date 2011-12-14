@@ -105,8 +105,10 @@ class InstanceInfo(BASE, NovaBillingBase):
 
 
 class InstanceSegment(BASE, NovaBillingBase):
-    TYPE_RUNNING = 0
-    TYPE_LIVING = 1
+    TYPE_ACTIVE = 0
+    TYPE_SUSPENDED = 1
+    TYPE_PAUSED = 2
+    TYPE_STOPPED = 3
 
     __tablename__ = 'billing_instance_segment'
     id = Column(Integer, primary_key=True, autoincrement=True)
