@@ -73,7 +73,16 @@ def instance_life_end(instance_id, stop_at, session=None):
         filter_by(instance_id=id, stop_at=None).update({"stop_at": stop_at})
 
 
-def instance_on_interval(project_id, int_start, int_stop):
+def instances_on_interval(period_start, period_stop, project_id=None):
+    """
+    project_id=None means all projects
+    returns dict(key = project_id,
+                 value = dict(
+                     key=instance_id,
+                     value=dict{"created_at", "destroyed_at", "running", "existing", "price"}
+                     )
+                )
+    """
     connection = get_session().connection()
     if 1:
       result = connection.execute(

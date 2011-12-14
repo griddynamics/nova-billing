@@ -94,29 +94,26 @@ class NovaBillingBase(object):
         return local.iteritems()
 
 
-class InstanceLife(BASE, NovaBillingBase):
-    __tablename__ = 'billing_instance_life'
+class InstanceInfo(BASE, NovaBillingBase):
+    __tablename__ = 'billing_instance_info'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    instance_id = Column(Integer)
-    start_at = Column(DateTime)
-    stop_at = Column(DateTime)
-    user_id = Column(String(255))
-    project_id = Column(String(255))
-    instance_type_id = Column(Integer)
+    instance_id = Column(Integer, nullable=False)
+    project_id = Column(String(255), nullable=True)
+    local_gb = Column(Integer, nullable=True)
+    memory_mb = Column(Integer, nullable=True)
+    vcpus = Column(Integer, nullable=True)
 
 
-class InstanceTypes(BASE, NovaBillingBase):
-    __tablename__ = 'billing_instance_types'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), unique=True)
-    flavorid = Column(Integer, unique=True)
-    price = Column(Integer)
+class InstanceSegment(BASE, NovaBillingBase):
+    TYPE_RUNNING = 0
+    TYPE_LIVING = 1
 
-    instances = relationship(InstanceLife,
-                       backref=backref('instance_type', uselist=False),
-                       foreign_keys=id,
-                       primaryjoin='and_(InstanceLife.instance_type_id == '
-                                   'InstanceTypes.id)')
+    __tablename__ = 'billing_instance_segment'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    instance_info_id = Column(Integer, nullable=False)
+    segment_type = Column(Integer, nullable=False)
+    begin_at = Column(DateTime, nullable=False)
+    end_at = Column(DateTime, nullable=True)
 
 
 def register_models():
@@ -126,7 +123,7 @@ def register_models():
     it will never need to be called explicitly elsewhere unless the
     connection is lost and needs to be reestablished.
     """
-    models = (InstanceLife, InstanceTypes)
+    models = (InstanceInfo, InstanceSegment)
     engine = get_engine()
     for model in models:
         model.metadata.create_all(engine)
