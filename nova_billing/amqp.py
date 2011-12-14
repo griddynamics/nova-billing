@@ -80,42 +80,36 @@ class Service(object):
 
     def process_message(self, body, message):
         try:
-            self.log_inst_info(body, message)
-        except Exception, ex:
+            self.save_instance_info(body, message)
+        except KeyError, ex:
             LOG.exception("cannot handle message")
         message.ack()
 
-    def log_inst_info(self, inst_info, message):
-        if inst_info.get("event_type", None) == "compute.instance.create":
-            payload = inst_info.get("payload", {})
-            event = "created"
-        elif inst_info.get("event_type", None) == "compute.instance.delete":
-            payload = inst_info.get("payload", {})
-            event = "deleted"
-        elif inst_info.get("method", None) == "run_instance":
-            payload = inst_info["args"]["request_spec"]["instance_properties"].copy()
-            payload["instance_id"] = inst_info["args"]["instance_id"]
-            payload["instance_type"] = inst_info["args"]["request_spec"]["instance_type"]["name"]
-            event = "run"
+    def save_instance_info(self, inst_info, message):
+        if inst_info.get("method", None) == "run_instance":
+            instance_properties = inst_info["args"]["request_spec"]["instance_properties"]
+            event_attrs = {
+                "project_id": instance_properties["project_id"],
+                "user_id": instance_properties["user_id"],
+                "instance_id": inst_info["args"]["instance_id"],
+                "instance_type": inst_info["args"]["request_spec"]["instance_type"]["name"],
+            }
+            is_start = True
         elif inst_info.get("method", None) == "terminate_instance":
-            payload = {"instance_id": inst_info["args"]["instance_id"]}
-            for attr in "project_id", "user_id":
-                payload[attr] = inst_info["_context_" + attr]
-            event = "terminate"
+            event_attrs = {"instance_id": inst_info["args"]["instance_id"]}
+            is_start = False
         else:
             return
 
         routing_key = message.delivery_info["routing_key"]
-        descr = "routing_key=%s event=%s" % (routing_key, event)
-        event_attrs = {"datetime": datetime.today(), "event": event}
-        for attr in ("instance_id", "project_id", "user_id", "instance_type"):
-            try:
-                event_attrs[attr] = payload[attr]
-                descr += " %s=%s" % (attr, payload[attr])
-            except:
-                pass
-
-        api.instance_event_create(event_attrs)
+        descr = "routing_key=%s %s" % (routing_key, ("start" if is_start else "end"))
+        for attr in event_attrs:
+            descr += " %s=%s" % (attr, event_attrs[attr])
+        if is_start:
+            event_attrs["start_at"] = datetime.utcnow()
+            api.instance_life_create(event_attrs)
+        else:
+            api.instance_life_end(event_attrs["instance_id"], datetime.utcnow())
         LOG.debug(descr)
 
     def consume(self):

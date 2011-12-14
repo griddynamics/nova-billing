@@ -27,7 +27,7 @@ Nova Billing API.
 from datetime import datetime
 
 from nova_billing.db.sqlalchemy import models
-from nova_billing.db.sqlalchemy.session import get_session
+from nova_billing.db.sqlalchemy.session import get_session, get_engine
 
 from nova import flags
 from nova import utils
@@ -50,16 +50,66 @@ def _parse_datetime(dtstr):
     return None
 
 
-def instance_event_create(values):
-    instance_event_ref = models.InstanceEvent()
-    instance_event_ref.update(values)
-    instance_event_ref.save()
-    return instance_event_ref
+def instance_life_create(values, session=None):
+    instance_life_end(values["instance_id"], values["start_at"])
+    instance_life_ref = models.InstanceLife()
+    instance_life_ref.update(values)
+    instance_life_ref.save(session=session)
+    return instance_life_ref
 
 
-def instance_event_get(filter):
-    session = get_session()
-    query = session.query(models.InstanceEvent)
+def instance_life_get(self, id, session=None):
+    if not session:
+        session = get_session()
+    result = session.query(models.InstanceLife).filter_by(id=id).first()
+    return result
+
+
+def instance_life_end(instance_id, stop_at, session=None):
+    if not session:
+        session = get_session()
+    session.commit()
+    instance_life_ref = session.query(models.InstanceLife).\
+        filter_by(instance_id=id, stop_at=None).update({"stop_at": stop_at})
+
+
+def instance_on_interval(project_id, int_start, int_stop):
+    connection = get_session().connection()
+    if 1:
+      result = connection.execute(
+        """
+        select instance_id, sum(
+            (julianday(case when stop_at is NULL or stop_at > ? then ? else stop_at end) - 
+            julianday(case when ? > start_at then ? else start_at end)) * %(instance_types)s.price) as total_price
+        from %(instance_life)s inner join %(instance_types)s on (%(instance_life)s.instance_type_id = %(instance_types)s.id) 
+        where start_at <= ? and (stop_at is NULL or stop_at >= ?)
+        group by instance_id
+        """  % {"instance_life": models.InstanceLife.__tablename__,
+                "instance_types": models.InstanceTypes.__tablename__},
+        int_stop, int_stop,
+        int_start, int_start,
+        int_stop, int_start)
+    else:
+     result = connection.execute(
+        """
+        select instance_id, 
+            julianday(stop_at) as total_price
+        from %(instance_life)s inner join %(instance_types)s on (%(instance_life)s.instance_type_id = %(instance_types)s.id) 
+        where start_at <= ? and (stop_at is NULL or stop_at >= ?)
+        
+        """  % {"instance_life": models.InstanceLife.__tablename__,
+                "instance_types": models.InstanceTypes.__tablename__},
+        int_stop, int_start)
+    
+    for row in result:
+        print "%s - %s" % (row["instance_id"], row["total_price"])
+    result.close()
+
+
+def instance_life_filter(filter, session=None):
+    if not session:
+        session = get_session()
+    query = session.query(models.InstanceLife)
 
     filter_fields = ("user_id",
                "project_id",
@@ -75,9 +125,9 @@ def instance_event_get(filter):
         query = query.filter_by(**filter_dict)
     date = _parse_datetime(filter.get("start", None))
     if date:
-        query = query.filter(models.InstanceEvent.datetime>=date)
+        query = query.filter(models.InstanceLife.datetime>=date)
     date = _parse_datetime(filter.get("end", None))
     if date:
-        query = query.filter(models.InstanceEvent.datetime<=date)
+        query = query.filter(models.InstanceLife.datetime<=date)
     result = query.all()
     return result

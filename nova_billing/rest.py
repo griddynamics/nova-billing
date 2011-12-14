@@ -25,8 +25,10 @@ REST API for Nova Billing
 """
 
 import json
+import webob
 import routes
 import routes.middleware
+import datetime
 
 from nova import flags
 from nova import wsgi as base_wsgi
@@ -53,17 +55,76 @@ def instance_event_dict(instance_event):
 
 
 class BillingController(object):
-    def index(self, req):
-        items = [instance_event_dict(event)
-               for event in api.instance_event_get(req.GET)]
-        return {"items": items}
+    """
+    WSGI app that reads routing information supplied by RoutesMiddleware
+    """
+
+    @webob.dec.wsgify
+    def __call__(self, req):
+        """
+        Call the method specified in req.environ by RoutesMiddleware.
+        """
+        arg_dict = req.environ['wsgiorg.routing_args'][1]
+        print arg_dict
+        
+        year = int(arg_dict["year"])
+        granularity = "y"
+        try:
+            month = int(arg_dict["month"])
+            granularity = "m"
+        except KeyError:
+            month = 1
+        try:
+            day = int(arg_dict["day"])
+            granularity = "d"
+        except KeyError:
+            day = 1
+
+        int_start = datetime.datetime(year=year, month=month, day=day)
+        if granularity == "d":
+            int_stop = int_start + datetime.timedelta(days=1)
+        else:
+            if granularity == "m":
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+            else:
+                year += 1
+            int_stop = datetime.datetime(year=year, month=month, day=day)
+        print "%s - %s" % (int_start, int_stop)
+        api.instance_on_interval(None, int_start, int_stop)
+        return "hello\n"
 
 
 class BillingApplication(base_wsgi.Router):
     def __init__(self):
         mapper = routes.Mapper()
-        mapper.resource("billing", "billing",
-                        controller=os_wsgi.Resource(BillingController()))
+        requirements = {"year": r"\d\d\d\d", "month": r"\d{1,2}", "day": r"\d{1,2}"}
+        mapper.connect(None, "/projects/{project}/{year}/{month}/{day}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects/{project}/{year}/{month}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects/{project}/{year}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects/{project}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects-all/{year}/{month}/{day}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects-all/{year}/{month}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects-all/{year}",
+                        controller=BillingController(),
+                        requirements=requirements)
+        mapper.connect(None, "/projects-all",
+                        controller=BillingController(),
+                        requirements=requirements)
         super(BillingApplication, self).__init__(mapper)
 
 

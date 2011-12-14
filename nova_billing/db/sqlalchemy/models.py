@@ -94,15 +94,29 @@ class NovaBillingBase(object):
         return local.iteritems()
 
 
-class InstanceEvent(BASE, NovaBillingBase):
-    __tablename__ = 'instance_event'
+class InstanceLife(BASE, NovaBillingBase):
+    __tablename__ = 'billing_instance_life'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    datetime = Column(DateTime)
+    instance_id = Column(Integer)
+    start_at = Column(DateTime)
+    stop_at = Column(DateTime)
     user_id = Column(String(255))
     project_id = Column(String(255))
-    instance_id = Column(Integer)
-    instance_type = Column(String(255))
-    event = Column(String(255))
+    instance_type_id = Column(Integer)
+
+
+class InstanceTypes(BASE, NovaBillingBase):
+    __tablename__ = 'billing_instance_types'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), unique=True)
+    flavorid = Column(Integer, unique=True)
+    price = Column(Integer)
+
+    instances = relationship(InstanceLife,
+                       backref=backref('instance_type', uselist=False),
+                       foreign_keys=id,
+                       primaryjoin='and_(InstanceLife.instance_type_id == '
+                                   'InstanceTypes.id)')
 
 
 def register_models():
@@ -112,7 +126,7 @@ def register_models():
     it will never need to be called explicitly elsewhere unless the
     connection is lost and needs to be reestablished.
     """
-    models = (InstanceEvent, )
+    models = (InstanceLife, InstanceTypes)
     engine = get_engine()
     for model in models:
         model.metadata.create_all(engine)
