@@ -105,11 +105,6 @@ class InstanceInfo(BASE, NovaBillingBase):
 
 
 class InstanceSegment(BASE, NovaBillingBase):
-    TYPE_ACTIVE = 0
-    TYPE_SUSPENDED = 1
-    TYPE_PAUSED = 2
-    TYPE_STOPPED = 3
-
     __tablename__ = 'billing_instance_segment'
     id = Column(Integer, primary_key=True, autoincrement=True)
     instance_info_id = Column(Integer, nullable=False)
@@ -119,12 +114,7 @@ class InstanceSegment(BASE, NovaBillingBase):
 
 
 def register_models():
-    """Register Models and create metadata.
-
-    Called from nova_billing.db.sqlalchemy.__init__ as part of loading the driver,
-    it will never need to be called explicitly elsewhere unless the
-    connection is lost and needs to be reestablished.
-    """
+    """Register Models and create metadata."""
     models = (InstanceInfo, InstanceSegment)
     engine = get_engine()
     for model in models:

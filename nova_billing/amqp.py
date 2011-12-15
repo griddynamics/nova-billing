@@ -40,8 +40,8 @@ from nova import exception
 from nova import flags
 from nova import log as logging
 
+from nova_billing import vm_states
 from nova_billing.db.sqlalchemy import api
-from nova_billing.db.sqlalchemy import models
 
 
 LOG = logging.getLogger("nova_billing.amqp_listener")
@@ -82,12 +82,12 @@ class Service(object):
 
     def process_message(self, body, message):
         try:
-            self.save_instance_info(body, message)
+            self.process_event(body, message)
         except KeyError, ex:
             LOG.exception("cannot handle message")
         message.ack()
 
-    def save_instance_info(self, body, message):
+    def process_event(self, body, message):
         method = body.get("method", None)
         instance_segment = None
         descr = ""
@@ -104,38 +104,39 @@ class Service(object):
 
             instance_segment = {
                 "instance_info_id": instance_info_ref.id,
-                "segment_type": models.InstanceSegment.TYPE_ACTIVE,
+                "segment_type": vm_states.ACTIVE,
             }
 
             descr = " instance info %s" % json.dumps(instance_info)
         elif method == "stop_instance":
             instance_segment = {
-                "segment_type": models.InstanceSegment.TYPE_STOPPED,
+                "segment_type": vm_states.STOPPED,
             }
         elif method == "unpause_instance":
             instance_segment = {
-                "segment_type": models.InstanceSegment.TYPE_ACTIVE,
+                "segment_type": vm_states.ACTIVE,
             }
         elif method == "pause_instance":
             instance_segment = {
-                "segment_type": models.InstanceSegment.TYPE_PAUSED,
+                "segment_type": vm_states.PAUSED,
             }
         elif method == "suspend_instance":
             instance_segment = {
-                "segment_type": models.InstanceSegment.TYPE_SUSPENDED,
+                "segment_type": vm_states.SUSPENDED,
             }
         elif method == "resume_instance":
             instance_segment = {
-                "segment_type": models.InstanceSegment.TYPE_ACTIVE,
+                "segment_type": vm_states.ACTIVE,
             }
         elif method == "terminate_instance":
             pass
         else:
             return
 
-        api.instance_segment_end(body["args"]["instance_id"], datetime.utcnow())
+        now = datetime.utcnow()
+        api.instance_segment_end(body["args"]["instance_id"], now)
         if instance_segment:
-            instance_segment["begin_at"] = datetime.utcnow()
+            instance_segment["begin_at"] = now
             if not instance_segment.has_key("instance_info_id"):
                 instance_segment["instance_info_id"] = \
                     api.instance_info_get_latest(body["args"]["instance_id"])
