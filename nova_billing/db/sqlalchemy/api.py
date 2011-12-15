@@ -137,12 +137,14 @@ def instances_on_interval(period_start, period_stop, project_id=None):
         if not retval.has_key(info.project_id):
             retval[info.project_id] = {}
         if retval[info.project_id].has_key(info.instance_id):
+            begin_at = segment.begin_at if segment.begin_at >= period_start else period_start
+            end_at = segment.end_at_at if segment.end_at >= period_stop else period_stop
             retval[info.project_id][info.instance_id]['price'] += \
-                spc.calculate(segment.begin_at, segment.end_at, segment.segment_type,
+                spc.calculate(begin_at, end_at, segment.segment_type,
                         info.local_gb, info.memory_mb, info.vcpus)
         else:
             retval[info.project_id][info.instance_id] = \
-            {"created_at": None,
+                {"created_at": None,
                  "destroyed_at": None,
                  "running": None,
                  "existing": None,
