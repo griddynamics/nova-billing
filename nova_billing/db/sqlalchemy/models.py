@@ -107,7 +107,7 @@ class InstanceInfo(BASE, NovaBillingBase):
 class InstanceSegment(BASE, NovaBillingBase):
     __tablename__ = 'billing_instance_segment'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    instance_info_id = Column(Integer, nullable=False)
+    instance_info_id = Column(Integer, ForeignKey('billing_instance_info.id'), nullable=False)
     segment_type = Column(Integer, nullable=False)
     begin_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=True)

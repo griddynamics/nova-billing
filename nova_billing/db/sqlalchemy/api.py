@@ -26,8 +26,12 @@ Nova Billing API.
 
 from datetime import datetime
 
+from sqlalchemy.orm import aliased
+from nova_billing.db.sqlalchemy.models import InstanceSegment, InstanceInfo
 from nova_billing.db.sqlalchemy import models
 from nova_billing.db.sqlalchemy.session import get_session, get_engine
+from nova_billing import vm_states
+from nova_billing.billing import SegmentPriceCalculator
 
 from sqlalchemy.sql import func, and_, or_
 
@@ -115,33 +119,31 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                      )
                 )
     """
-    connection = get_session().connection()
-    if 1:
-      result = connection.execute(
-        """
-        select instance_id, sum(
-            (julianday(case when stop_at is NULL or stop_at > ? then ? else stop_at end) - 
-            julianday(case when ? > start_at then ? else start_at end)) * %(instance_types)s.price) as total_price
-        from %(instance_info)s inner join %(instance_types)s on (%(instance_info)s.instance_type_id = %(instance_types)s.id) 
-        where start_at <= ? and (stop_at is NULL or stop_at >= ?)
-        group by instance_id
-        """  % {"instance_info": models.InstanceInfo.__tablename__,
-                "instance_types": models.InstanceTypes.__tablename__},
-        int_stop, int_stop,
-        int_start, int_start,
-        int_stop, int_start)
-    else:
-     result = connection.execute(
-        """
-        select instance_id, 
-            julianday(stop_at) as total_price
-        from %(instance_info)s inner join %(instance_types)s on (%(instance_info)s.instance_type_id = %(instance_types)s.id) 
-        where start_at <= ? and (stop_at is NULL or stop_at >= ?)
-        
-        """  % {"instance_info": models.InstanceInfo.__tablename__,
-                "instance_types": models.InstanceTypes.__tablename__},
-        int_stop, int_start)
-    
-    for row in result:
-        print "%s - %s" % (row["instance_id"], row["total_price"])
-    result.close()
+    session = get_session()
+
+    is1 = aliased(InstanceSegment)
+    is2 = aliased(InstanceSegment)
+    ins_info = aliased(InstanceInfo)
+    result = session.query(is1,ins_info).\
+            join(ins_info).\
+            filter(is1.begin_at >= period_start).\
+            join(is2).\
+            filter(or_(is2.end_at <= period_stop, is2.end_at==None)).\
+            order_by(is1.begin_at)
+
+    spc = SegmentPriceCalculator()
+    retval = {}
+    for segment, info in result:
+            if not retval.has_key(info.project_id):
+                retval[info.project_id] = {}
+            if retval[info.project_id].has_key(info.instance_id):
+                retval[info.project_id][info.instance_id]['price'] += \
+                    spc.calculate(segment.begin_at, segment.end_at, segment.segment_type)
+            else:
+                retval[info.project_id][info.instance_id] = \
+                dict([("created_at", None), ("destroyed_at", None), ("running", 1),
+                    ("existing", 1), ("price", 0)])
+
+    return retval
+
+
