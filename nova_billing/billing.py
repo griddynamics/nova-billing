@@ -37,9 +37,9 @@ class BasePriceCalculator(object):
 
 class ActivePriceCalculator(BasePriceCalculator):
     def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
-        self.price += BILLABLE_PARAMS_WEIGHTS[local_gb] * local_gb
-        self.price += BILLABLE_PARAMS_WEIGHTS[memory_mb] * memory_mb
-        self.price += BILLABLE_PARAMS_WEIGHTS[vcpus] * vcpus
+        self.price += BILLABLE_PARAMS_WEIGHTS['local_gb'] * local_gb
+        self.price += BILLABLE_PARAMS_WEIGHTS['memory_mb'] * memory_mb
+        self.price += BILLABLE_PARAMS_WEIGHTS['vcpus'] * vcpus
         return super(ActivePriceCalculator, self).calculate(period_start, period_stop)
 
 
