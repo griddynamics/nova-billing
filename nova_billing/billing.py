@@ -28,6 +28,7 @@ class BasePriceCalculator(object):
     def calculate(self, period_start, period_stop):
         return (period_stop - period_start).seconds * self.price
 
+
 class ActivePriceCalculator(BasePriceCalculator):
     def __init__(self):
         self.price = 2

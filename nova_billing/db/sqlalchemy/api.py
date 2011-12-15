@@ -1,9 +1,9 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
+    # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-# Copyright (c) 2011 Grid Dynamics Consulting Services, Inc, All Rights Reserved
-#  http://www.griddynamics.com
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
+    # Copyright (c) 2011 Grid Dynamics Consulting Services, Inc, All Rights Reserved
+    #  http://www.griddynamics.com
+    #
+    #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
 #
@@ -134,15 +134,19 @@ def instances_on_interval(period_start, period_stop, project_id=None):
     spc = SegmentPriceCalculator()
     retval = {}
     for segment, info in result:
-            if not retval.has_key(info.project_id):
-                retval[info.project_id] = {}
-            if retval[info.project_id].has_key(info.instance_id):
-                retval[info.project_id][info.instance_id]['price'] += \
-                    spc.calculate(segment.begin_at, segment.end_at, segment.segment_type)
-            else:
-                retval[info.project_id][info.instance_id] = \
-                dict([("created_at", None), ("destroyed_at", None), ("running", 1),
-                    ("existing", 1), ("price", 0)])
+        if not retval.has_key(info.project_id):
+            retval[info.project_id] = {}
+        if retval[info.project_id].has_key(info.instance_id):
+            retval[info.project_id][info.instance_id]['price'] += \
+                spc.calculate(segment.begin_at, segment.end_at, segment.segment_type)
+        else:
+            retval[info.project_id][info.instance_id] = \
+            dict([("created_at", None), ("destroyed_at", None), ("running", 1),
+                ("existing", 1), ("price", 0)])
+        if segment.segment_type == vm_states.DELETED:
+            retval[info.project_id][info.instance_id]['destroyed_at'] = segment.begin_at
+        if segment.segment_type == vm_states.BUILDING:
+            retval[info.project_id][info.instance_id]['created_at'] = segment.begin_at
 
     return retval
 
