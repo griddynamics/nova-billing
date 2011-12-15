@@ -138,11 +138,16 @@ def instances_on_interval(period_start, period_stop, project_id=None):
             retval[info.project_id] = {}
         if retval[info.project_id].has_key(info.instance_id):
             retval[info.project_id][info.instance_id]['price'] += \
-                spc.calculate(segment.begin_at, segment.end_at, segment.segment_type)
+                spc.calculate(segment.begin_at, segment.end_at, segment.segment_type,
+                        info.local_gb, info.memory_mb, info.vcpus)
         else:
             retval[info.project_id][info.instance_id] = \
-            dict([("created_at", None), ("destroyed_at", None), ("running", 1),
-                ("existing", 1), ("price", 0)])
+            {"created_at": None,
+                 "destroyed_at": None,
+                 "running": None,
+                 "existing": None,
+                 "price": 0
+                 }
         if segment.segment_type == vm_states.DELETED:
             retval[info.project_id][info.instance_id]['destroyed_at'] = segment.begin_at
         if segment.segment_type == vm_states.BUILDING:

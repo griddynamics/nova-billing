@@ -25,7 +25,7 @@ from nova_billing import vm_states
 class BasePriceCalculator(object):
     price = 1
 
-    def calculate(self, period_start, period_stop):
+    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
         return (period_stop - period_start).seconds * self.price
 
 
@@ -41,8 +41,11 @@ class SegmentPriceCalculator(object):
         self.calculators[vm_states.ACTIVE] = ActivePriceCalculator()
         self.calculators['DEFAULT'] = BasePriceCalculator()
 
-    def calculate(self, period_start, period_stop, state):
+    def calculate(self, period_start, period_stop, state,
+                  local_gb, memory_mb, vcpus):
         if self.calculators.has_key(state):
-            return self.calculators[state].calculate(period_start, period_stop)
+            return self.calculators[state].calculate(period_start,
+                period_stop, local_gb, memory_mb, vcpus)
         else:
-            return self.calculators['DEFAULT'].calculate(period_start, period_stop)
+            return self.calculators['DEFAULT'].calculate(period_start, period_stop,
+                local_gb, memory_mb, vcpus)
