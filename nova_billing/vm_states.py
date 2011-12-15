@@ -26,16 +26,8 @@ There are integers for string states from nova.compute.vm_states
 """
 
 ACTIVE = 0
-BUILDING = 1
-REBUILDING = 2
 
 PAUSED = 3
 SUSPENDED = 4
-RESCUED = 5
-DELETED = 6
 STOPPED = 7
 
-MIGRATING = 8
-RESIZING = 9
-
-ERROR = 10
