@@ -34,7 +34,7 @@ from nova import flags
 from nova import wsgi as base_wsgi
 from nova.api.openstack import wsgi as os_wsgi
 
-from nova_billing.db.sqlalchemy import api
+from nova_billing.db import api as db_api
 
 
 FLAGS = flags.FLAGS
@@ -87,25 +87,10 @@ class BillingController(object):
             else:
                 year += 1
             period_stop = datetime.datetime(year=year, month=month, day=day)
-        print "%s - %s" % (period_start, period_stop)
-        project_id = arg_dict.get("project", None)
-        #FIXME: wait for implementation
-        #total_statistics = api.instances_on_interval(period_start, period_stop, project_id)
-        #FIXME: total_statistics for debug:
-        now = datetime.datetime.now()
-        total_statistics = {
-            "systenant": {
-                 "12": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
-                 "14": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
-            },
-            "tenant12": {
-                 "54": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
-                 "67": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
-                 "64": {"created_at": now, "destroyed_at": now, "running": 12, "price":3},
-            }
-        }
 
-        show_instances = True
+        total_statistics = db_api.instances_on_interval(
+            period_start, period_stop, arg_dict.get("project", None))
+        show_instances = not duration.startswith("y")
         projects = {}
         for project_id, project_statistics in total_statistics.items():
             instances = {}
