@@ -22,16 +22,25 @@
 
 from nova_billing import vm_states
 
+BILLABLE_PARAMS_WEIGHTS = {
+    'local_gb' : 1,
+     'memory_mb' : 2,
+     'vcpus' : 3
+}
+
 class BasePriceCalculator(object):
     price = 1
 
-    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
+    def calculate(self, period_start, period_stop, local_gb=None, memory_mb=None, vcpus=None):
         return (period_stop - period_start).seconds * self.price
 
 
 class ActivePriceCalculator(BasePriceCalculator):
-    def __init__(self):
-        self.price = 2
+    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
+        self.price += BILLABLE_PARAMS_WEIGHTS[local_gb] * local_gb
+        self.price += BILLABLE_PARAMS_WEIGHTS[memory_mb] * memory_mb
+        self.price += BILLABLE_PARAMS_WEIGHTS[vcpus] * vcpus
+        return super(ActivePriceCalculator, self).calculate(period_start, period_stop)
 
 
 class SegmentPriceCalculator(object):
