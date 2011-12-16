@@ -123,71 +123,61 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                 )
     """
     session = get_session()
-
-    is1 = aliased(InstanceSegment)
-    is2 = aliased(InstanceSegment)
-    ins_info = aliased(InstanceInfo)
-    result = session.query(is1,ins_info).\
-            join(ins_info).\
-            filter(is1.begin_at >= period_start).\
-            join(is2).\
-            filter(or_(is2.end_at <= period_stop, is2.end_at==None)).\
-            order_by(is1.begin_at)
-
+    result = session.query(InstanceSegment, InstanceInfo).\
+                join(InstanceInfo).\
+                filter(InstanceSegment.begin_at < period_stop).\
+                filter(or_(InstanceSegment.end_at > period_start, InstanceSegment.end_at==None))
     if project_id:
-        result = result.filter(ins_info)
+        result = result.filter(InstanceInfo.project_id == project_id)
 
     spc = SegmentPriceCalculator()
     retval = {}
+    inst_by_id = {}
     for segment, info in result:
         if not retval.has_key(info.project_id):
             retval[info.project_id] = {}
-        if retval[info.project_id].has_key(info.instance_id):
-            begin_at = segment.begin_at if segment.begin_at >= period_start else period_start
-            end_at = segment.end_at_at if segment.end_at >= period_stop else period_stop
-            retval[info.project_id][info.instance_id]['price'] += \
-                spc.calculate(begin_at, end_at, segment.segment_type,
-                        info.local_gb, info.memory_mb, info.vcpus)
-        else:
-            retval[info.project_id][info.instance_id] = \
-                {"created_at": None,
+        try:
+            inst_descr = inst_by_id[info.instance_id]
+        except KeyError:
+            inst_descr = {"created_at": None,
                  "destroyed_at": None,
                  "running": None,
                  "existing": None,
                  "price": 0
                  }
+            retval[info.project_id][info.instance_id] = inst_descr
+            inst_by_id[info.instance_id] = inst_descr
+        begin_at = min(segment.begin_at, period_start)
+        end_at = max(segment.end_at, period_stop)
+        inst_descr['price'] += \
+            spc.calculate(begin_at, end_at, segment.segment_type,
+                   info.local_gb, info.memory_mb, info.vcpus)
 
-    instances = {}
-    for project in retval.itervalues():
-        for instance in project.iterkeys():
-            instances[instance] = None
-    rows = session.query(func.min(InstanceSegment.begin_at).label('min_start'),
-        func.max(InstanceSegment.end_at).label('max_stop'), InstanceInfo.id.label('info_id'),
-        InstanceSegment.segment_type.label('segment_type'), InstanceInfo.instance_id.label('instance_id'),
-        InstanceInfo.project_id.label('project')).\
+    rows = session.query(InstanceSegment,
+        func.min(InstanceSegment.begin_at).label('min_start'), 
+        func.max(InstanceSegment.begin_at).label('max_start'),
+	func.max(InstanceSegment.end_at).label('max_stop'), 
+        InstanceInfo.project_id,
+        InstanceInfo.instance_id).\
                 join(InstanceInfo).\
-                group_by(InstanceInfo.id).\
                 group_by(InstanceInfo.instance_id).\
                 group_by(InstanceInfo.project_id).\
-                group_by(InstanceSegment.segment_type)
+                filter(InstanceSegment.begin_at < period_stop).\
+                filter(or_(InstanceSegment.end_at > period_start, InstanceSegment.end_at==None))
 
     for row in rows:
-        if not instances.has_key(row.instance_id):
-            instances[row.instance_id] = {}
-        if row.segment_type == vm_states.ACTIVE:
-            instances[row.instance_id]['created_at'] = row.min_start
-        if row.segment_type == vm_states.STOPPED:
-            instances[row.instance_id]['destroyed_at'] = row.max_stop
-        instances[row.project]['project'] = row.max_stop
-
-    for instance, data in instances.iteritems():
-        created_at = period_start
-        destroyed_at = period_stop
-        if data.has_key('created_at'):
-            created_at = data['created_at']
-        if data.has_key('destroyed_at'):
-            destroyed_at = data['destroyed_at']
-
-        retval[data['project']][instance]['existing'] = (destroyed_at - created_at).seconds
+        inst_descr = inst_by_id.get(row.instance_id, None)
+        if not inst_descr:
+            continue
+        inst_descr['created_at'] = row.min_start
+        
+        if row.max_stop is None or row.max_start < row.max_stop:
+            inst_descr['destroyed_at'] = row.max_stop 
+        created_at = inst_descr['created_at'] or period_start
+        destroyed_at = inst_descr['destroyed_at'] or period_stop
+        created_at = max(created_at, period_start)
+        destroyed_at = min(destroyed_at, period_stop)
+        inst_descr['existing'] = (destroyed_at - created_at).total_seconds()
 
     return retval
+
