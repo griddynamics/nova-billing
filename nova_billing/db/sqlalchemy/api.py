@@ -26,14 +26,17 @@ Nova Billing API.
 
 from datetime import datetime
 
+from sqlalchemy import func
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.exc import NoResultFound
+
 from nova_billing.db.sqlalchemy.models import InstanceSegment, InstanceInfo
 from nova_billing.db.sqlalchemy import models
 from nova_billing.db.sqlalchemy.session import get_session, get_engine
 from nova_billing import vm_states
 from nova_billing.billing import SegmentPriceCalculator
 
-from sqlalchemy.sql import func, and_, or_
+from sqlalchemy.sql import func, and_, or_, desc
 
 from nova import flags
 from nova import utils
@@ -131,6 +134,9 @@ def instances_on_interval(period_start, period_stop, project_id=None):
             filter(or_(is2.end_at <= period_stop, is2.end_at==None)).\
             order_by(is1.begin_at)
 
+    if project_id:
+        result = result.filter(ins_info)
+
     spc = SegmentPriceCalculator()
     retval = {}
     for segment, info in result:
@@ -150,10 +156,20 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                  "existing": None,
                  "price": 0
                  }
-        if segment.segment_type == vm_states.DELETED:
-            retval[info.project_id][info.instance_id]['destroyed_at'] = segment.begin_at
-        if segment.segment_type == vm_states.BUILDING:
-            retval[info.project_id][info.instance_id]['created_at'] = segment.begin_at
+
+    instances = []
+    for project in retval.itervalues():
+        for instance in project.iterkeys():
+            instances.append(instance)
+    rows = session.query(func.min(InstanceSegment.begin_at), func.max(InstanceSegment.end_at), InstanceInfo.id,
+        InstanceSegment.segment_type, InstanceInfo.instance_id, InstanceInfo.project_id).\
+                join(InstanceInfo).\
+                group_by(InstanceInfo.id).\
+                group_by(InstanceInfo.instance_id).\
+                group_by(InstanceInfo.project_id).\
+                group_by(InstanceSegment.segment_type)
+
+    raise NotImplementedError
 
     return retval
 
