@@ -32,7 +32,7 @@ class BasePriceCalculator(object):
     price = 1
 
     def calculate(self, period_start, period_stop, local_gb=None, memory_mb=None, vcpus=None):
-        return (period_stop - period_start).seconds * self.price
+        return (period_stop - period_start).total_seconds() * self.price
 
 
 class ActivePriceCalculator(BasePriceCalculator):
@@ -43,18 +43,30 @@ class ActivePriceCalculator(BasePriceCalculator):
         return super(ActivePriceCalculator, self).calculate(period_start, period_stop)
 
 
+class SuspendedPriceCalculator(BasePriceCalculator):
+    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
+        self.price += BILLABLE_PARAMS_WEIGHTS['local_gb'] * local_gb
+        self.price += BILLABLE_PARAMS_WEIGHTS['memory_mb'] * memory_mb
+        return super(SuspendedPriceCalculator, self).calculate(period_start, period_stop)
+
+
+class StoppedPriceCalculator(BasePriceCalculator):
+    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
+        self.price += BILLABLE_PARAMS_WEIGHTS['local_gb'] * local_gb
+        return super(StoppedPriceCalculator, self).calculate(period_start, period_stop)
+
+
 class SegmentPriceCalculator(object):
     calculators = {}
 
     def __init__(self):
         self.calculators[vm_states.ACTIVE] = ActivePriceCalculator()
+        self.calculators[vm_states.SUSPENDED] = SuspendedPriceCalculator()
+        self.calculators[vm_states.PAUSED] = SuspendedPriceCalculator()
+        self.calculators[vm_states.STOPPED] = SuspendedPriceCalculator()
         self.calculators['DEFAULT'] = BasePriceCalculator()
 
     def calculate(self, period_start, period_stop, state,
                   local_gb, memory_mb, vcpus):
-        if self.calculators.has_key(state):
-            return self.calculators[state].calculate(period_start,
-                period_stop, local_gb, memory_mb, vcpus)
-        else:
-            return self.calculators['DEFAULT'].calculate(period_start, period_stop,
-                local_gb, memory_mb, vcpus)
+        calc = self.calculators.get(state, self.calculators['DEFAULT'])
+        return calc.calculate(period_start, period_stop, local_gb, memory_mb, vcpus)
