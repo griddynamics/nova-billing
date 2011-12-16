@@ -157,20 +157,37 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                  "price": 0
                  }
 
-    instances = []
+    instances = {}
     for project in retval.itervalues():
         for instance in project.iterkeys():
-            instances.append(instance)
-    rows = session.query(func.min(InstanceSegment.begin_at), func.max(InstanceSegment.end_at), InstanceInfo.id,
-        InstanceSegment.segment_type, InstanceInfo.instance_id, InstanceInfo.project_id).\
+            instances[instance] = None
+    rows = session.query(func.min(InstanceSegment.begin_at).label('min_start'),
+        func.max(InstanceSegment.end_at).label('max_stop'), InstanceInfo.id.label('info_id'),
+        InstanceSegment.segment_type.label('segment_type'), InstanceInfo.instance_id.label('instance_id'),
+        InstanceInfo.project_id.label('project')).\
                 join(InstanceInfo).\
                 group_by(InstanceInfo.id).\
                 group_by(InstanceInfo.instance_id).\
                 group_by(InstanceInfo.project_id).\
                 group_by(InstanceSegment.segment_type)
 
-    raise NotImplementedError
+    for row in rows:
+        if not instances.has_key(row.instance_id):
+            instances[row.instance_id] = {}
+        if row.segment_type == vm_states.ACTIVE:
+            instances[row.instance_id]['created_at'] = row.min_start
+        if row.segment_type == vm_states.STOPPED:
+            instances[row.instance_id]['destroyed_at'] = row.max_stop
+        instances[row.project]['project'] = row.max_stop
+
+    for instance, data in instances.iteritems():
+        created_at = period_start
+        destroyed_at = period_stop
+        if data.has_key('created_at'):
+            created_at = data['created_at']
+        if data.has_key('destroyed_at'):
+            destroyed_at = data['destroyed_at']
+
+        retval[data['project']][instance]['existing'] = (destroyed_at - created_at).seconds
 
     return retval
-
-
