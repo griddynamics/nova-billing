@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2010 United States Government as represented by the
@@ -31,7 +32,9 @@ setup(name='nova-billing',
       author='OpenStack',
       author_email='nova@lists.launchpad.net',
       url='http://www.openstack.org/',
-      packages=find_packages(exclude=['bin', 'smoketests']),
+      packages=find_packages(exclude=['bin', 'smoketests', 'tests']),
       scripts=['bin/nova-billing'],
-      py_modules=[])
+      py_modules=[],
+      test_suite="tests"
+)
 

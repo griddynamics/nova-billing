@@ -26,6 +26,7 @@ AMQP listener
 import os
 import sys
 import time
+import socket
 from datetime import datetime
 
 import eventlet
@@ -41,7 +42,7 @@ from nova import flags
 from nova import log as logging
 
 from nova_billing import vm_states
-from nova_billing.db.sqlalchemy import api
+from nova_billing.db import api as db_api
 
 
 LOG = logging.getLogger("nova_billing.amqp_listener")
@@ -55,8 +56,15 @@ class Service(object):
                           userid=FLAGS.rabbit_userid,
                           password=FLAGS.rabbit_password,
                           virtual_host=FLAGS.rabbit_virtual_host)
+        self.connection = None
 
-        LOG.debug("%s" % self.params)
+    def reconnect(self):
+        if self.connection:
+            try:
+                self.connection.close()
+            except self.connection.connection_errors:
+                pass
+            time.sleep(1)
 
         self.connection = kombu.connection.BrokerConnection(**self.params)
 
@@ -79,6 +87,7 @@ class Service(object):
             routing_key="compute.#",
             channel=self.channel,
             **options)
+        LOG.debug("created kombu connection: %s" % self.params)
 
     def process_message(self, body, message):
         try:
@@ -100,7 +109,7 @@ class Service(object):
             instance_type = body["args"]["request_spec"]["instance_type"]
             for key in "local_gb", "memory_mb", "vcpus":
                 instance_info[key] = instance_type[key]
-            instance_info_ref = api.instance_info_create(instance_info)
+            instance_info_ref = db_api.instance_info_create(instance_info)
 
             instance_segment = {
                 "instance_info_id": instance_info_ref.id,
@@ -108,6 +117,12 @@ class Service(object):
             }
 
             descr = " instance info %s" % json.dumps(instance_info)
+        elif method == "terminate_instance":
+            pass
+        elif method == "start_instance":
+            instance_segment = {
+                "segment_type": vm_states.ACTIVE,
+            }
         elif method == "stop_instance":
             instance_segment = {
                 "segment_type": vm_states.STOPPED,
@@ -120,38 +135,49 @@ class Service(object):
             instance_segment = {
                 "segment_type": vm_states.PAUSED,
             }
-        elif method == "suspend_instance":
-            instance_segment = {
-                "segment_type": vm_states.SUSPENDED,
-            }
         elif method == "resume_instance":
             instance_segment = {
                 "segment_type": vm_states.ACTIVE,
             }
-        elif method == "terminate_instance":
-            pass
+        elif method == "suspend_instance":
+            instance_segment = {
+                "segment_type": vm_states.SUSPENDED,
+            }
         else:
             return
 
-        now = datetime.utcnow()
-        api.instance_segment_end(body["args"]["instance_id"], now)
+        event_datetime = self.get_event_datetime(body)
+        db_api.instance_segment_end(body["args"]["instance_id"], event_datetime)
         if instance_segment:
-            instance_segment["begin_at"] = now
+            instance_segment["begin_at"] = event_datetime
             if not instance_segment.has_key("instance_info_id"):
                 instance_segment["instance_info_id"] = \
-                    api.instance_info_get_latest(body["args"]["instance_id"])
-            api.instance_segment_create(instance_segment)
-
-        routing_key = message.delivery_info["routing_key"]
+                    db_api.instance_info_get_latest(body["args"]["instance_id"])
+            db_api.instance_segment_create(instance_segment)
+        try:
+            routing_key = message.delivery_info["routing_key"]
+        except AttributeError, KeyError:
+            routing_key = "<unknown>"
         LOG.debug("routing_key=%s method=%s%s" % (routing_key, method, descr))
 
+    def get_event_datetime(self, body):
+        return datetime.utcnow()
+
     def consume(self):
-        with kombu.messaging.Consumer(
-            channel=self.channel,
-            queues=self.queue,
-            callbacks=[self.process_message]) as consumer:
-            while True:
-                self.connection.drain_events()
+        while True:
+            try:
+                self.reconnect()
+                with kombu.messaging.Consumer(
+                    channel=self.channel,
+                    queues=self.queue,
+                    callbacks=[self.process_message]) as consumer:
+                    while True:
+                        self.connection.drain_events()
+            except socket.error:
+                pass
+            except Exception, e:
+                LOG.exception(_('Failed to consume message from queue: '
+                        '%s' % str(e)))
 
     def start(self):
         self.server = eventlet.spawn(self.consume)
