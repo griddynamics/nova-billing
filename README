@@ -1,32 +1,144 @@
-The billing server stores instance start/terminate information in a database and proveides access through REST API.
+=============================
+Openstack Nova Billing README
+=============================
 
-By default, the billing server uses /var/lib/nova/nova_billing.sqlite database (parameter billing_sql_connection)
-and port 8787 (parameter billing_listen_port) that can be changed in /etc/nova/nova.conf.
-The server saves logs to /var/log/nova/nova-billing.log.
+Overview
+===========================
+
+The billing server stores instance state information (creation, stopping,
+suspending, etc.) in a database and generates reports accessed by REST API.
+
+
+Configuration
+===========================
+
+By default, the billing server uses ``/var/lib/nova/nova_billing.sqlite`` database 
+(parameter ``billing_sql_connection``) and port 8787 (parameter ``billing_listen_port``)
+that can be changed in ``/etc/nova/nova.conf``.
+
+The server saves logs to ``/var/log/nova/nova-billing.log``.
+
+
+RPM Building
+===========================
+
+Clone git repository, rename the top dir to openstack-nova-billing-2011.3,
+and tar it to openstack-nova-billing-2011.3.tar.gz. Place it to rpmbuild/SOURCES
+directory and run::
+
+    $ rpmbuild -ba openstack-nova-billing.spec
+
 
 Quickstart
-Build the package :)
+===========================
 
-Install the package:
+Install the package::
+
     # yum install openstack-nova-billing
 
-Start the server:
+Start the server::
+
     # /etc/init.d/openstack-nova-billing start
 
-Start or stop instances and test the server:
-    $ curl 'http://localhost:8787/billing?project_id=systenant&start=2011-12-08T08%3A59%3A00'|python -mjson.tool
-{
-    "items": [
-        {
-            "datetime": "2011-12-08 08:59:48.676596", 
-            "event": "run", 
-            "instance_id": 49, 
-            "instance_type": "m1.small", 
-            "project_id": "systenant", 
-            "user_id": "admin"
-        }
-    ]
-}
+Now instance state changes will be stored to a database.
 
-You can combine project_id, user_id, instance_id, and event in the query as far as start and end parameters.
-You could omit all parameters to retrieve all the data without filtering.
+
+REST API
+===========================
+
+Nova billing daemon supports two forms of requests.
+
+#. ``/projects/{project}/{time period}``.
+#. ``/projects-all/{time period}``.
+
+The first form retrieves statistics for the given project.
+The second form retrieves data for all projects.
+
+Each form has three variants.
+
+#. Report for a year: ``/projects/{project}/{year}`` and ``/projects-all/{year}``.
+#. Report for a month: ``/projects/{project}/{year}/{month}`` and ``/projects-all/{year}/{month}``.
+#. Report for a day: ``/projects/{project}/{year}/{month}/{day}`` and ``/projects-all/{year}/{month}/{day}``.
+
+``month`` is an integer between 1 (January) and 12 (December).
+
+``day`` is an integer between 1 and the number of days in the given month and year.
+
+
+Examples::
+
+    $ curl http://localhost:8787/projects/systenant/2011 | python -mjson.tool
+    {
+        "date": "2011-01-01T00:00:00", 
+        "duration": "year", 
+        "projects": {
+            "systenant": {
+                "instances_count": 2, 
+                "name": "systenant", 
+                "price": 1066472622, 
+                "running": 257115, 
+                "url": "http://127.0.0.1:8787/projects/systenant"
+            }
+        }
+    }
+    $ curl http://localhost:8787/projects/systenant/2011/12 | python -mjson.tool
+    {
+        "date": "2011-12-01T00:00:00", 
+        "duration": "month", 
+        "projects": {
+            "systenant": {
+                "instances": {
+                    "55": {
+                        "created_at": "2011-12-15T18:22:33.887135", 
+                        "destroyed_at": null, 
+                        "name": 55, 
+                        "price": 1052478720, 
+                        "running": 255456
+                    }, 
+                    "56": {
+                        "created_at": "2011-12-15T18:23:06.452062", 
+                        "destroyed_at": "2011-12-15T18:52:05.391688", 
+                        "name": 56, 
+                        "price": 14319382, 
+                        "running": 1738
+                    }
+                }, 
+                "instances_count": 2, 
+                "name": "systenant", 
+                "price": 1066798102, 
+                "running": 257194, 
+                "url": "http://127.0.0.1:8787/projects/systenant"
+            }
+        }
+    }
+    $ curl http://localhost:8787/projects-all/2011/12 | python -mjson.tool
+    {
+        "date": "2011-12-01T00:00:00", 
+        "duration": "month", 
+        "projects": {
+            "systenant": {
+                "instances": {
+                    "55": {
+                        "created_at": "2011-12-15T18:22:33.887135", 
+                        "destroyed_at": null, 
+                        "name": 55, 
+                        "price": 1052672360, 
+                        "running": 255503
+                    }, 
+                    "56": {
+                        "created_at": "2011-12-15T18:23:06.452062", 
+                        "destroyed_at": "2011-12-15T18:52:05.391688", 
+                        "name": 56, 
+                        "price": 14319382, 
+                        "running": 1738
+                    }
+                }, 
+                "instances_count": 2, 
+                "name": "systenant", 
+                "price": 1066991742, 
+                "running": 257241, 
+                "url": "http://127.0.0.1:8787/projects/systenant"
+            }
+        }
+    }
+
