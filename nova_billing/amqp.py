@@ -50,6 +50,14 @@ FLAGS = flags.FLAGS
 
 
 class Service(object):
+    """
+    Class of AMQP listening service.
+    Usually this service starts at the beginning of the billing daemon
+    and starts listening immediately. In case of connection errors
+    reconnection attempts will be made periodically.
+    
+    The service listens for ``compute.#`` routing keys.
+    """
     def __init__(self):
         self.params = dict(hostname=FLAGS.rabbit_host,
                           port=FLAGS.rabbit_port,
@@ -97,6 +105,10 @@ class Service(object):
         message.ack()
 
     def process_event(self, body, message):
+        """
+        This function analyzes ``body`` and saves
+        event information to the database.
+        """
         method = body.get("method", None)
         instance_segment = None
         descr = ""
@@ -164,6 +176,9 @@ class Service(object):
         return datetime.utcnow()
 
     def consume(self):
+        """
+        Get messages in an infinite loop. This is the main function of service's green thread.
+        """
         while True:
             try:
                 self.reconnect()

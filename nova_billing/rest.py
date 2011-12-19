@@ -45,21 +45,22 @@ flags.DEFINE_integer("billing_listen_port", 8787, "Billing API port")
 
 def datetime_to_str(dt):
     """
-    Convert datetime.datetime instance to string
-    Used for JSONization
+    Convert datetime.datetime instance to string.
+    Used for JSONization.
     """
     return dt.isoformat() if dt else None
 
 
 class BillingController(object):
     """
-    WSGI app that reads routing information supplied by RoutesMiddleware
+    WSGI application that reads routing information supplied by ``RoutesMiddleware``
+    and returns a report.
     """
 
     @webob.dec.wsgify
     def __call__(self, req):
         """
-        Parse arguments, ask db api, and return JSON report
+        Determine period start and stop, ask db api, and return JSON report.
         """
         arg_dict = req.environ['wsgiorg.routing_args'][1]
         year = int(arg_dict["year"])
@@ -128,6 +129,10 @@ class BillingController(object):
 
 
 class BillingApplication(base_wsgi.Router):
+    """
+    This application parses HTTP requests and calls ``BillingController``.
+    """
+
     def __init__(self):
         mapper = routes.Mapper()
         requirements = {"year": r"\d\d\d\d", "month": r"\d{1,2}", "day": r"\d{1,2}"}
@@ -159,5 +164,9 @@ class BillingApplication(base_wsgi.Router):
 
 
 class Loader(object):
+    """This loader is used to load WSGI billing application 
+    instead of ``nova.wsgi.Loader`` that loads applications
+    from paste configurations."""
+
     def load_app(self, name):
         return BillingApplication()

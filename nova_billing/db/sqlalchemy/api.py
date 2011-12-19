@@ -40,8 +40,10 @@ from nova_billing.billing import SegmentPriceCalculator, total_seconds
 
 FLAGS = flags.FLAGS
 
-
 def configure_backend():
+    """
+    Perform backend initialization.
+    """
     models.register_models()
 
 
@@ -60,6 +62,9 @@ def _parse_datetime(dtstr):
 
 
 def instance_info_create(values, session=None):
+    """
+    Create and store an ``InstanceInfo`` object in the database.
+    """
     entity_ref = InstanceInfo()
     entity_ref.update(values)
     entity_ref.save(session=session)
@@ -67,6 +72,9 @@ def instance_info_create(values, session=None):
 
 
 def instance_info_get(self, id, session=None):
+    """
+    Get an ``InstanceInfo`` object with the given ``id``.
+    """
     if not session:
         session = get_session()
     result = session.query(InstanceInfo).filter_by(id=id).first()
@@ -74,6 +82,9 @@ def instance_info_get(self, id, session=None):
 
 
 def instance_segment_create(values, session=None):
+    """
+    Create and store an ``InstanceSegment`` object in the database.
+    """
     entity_ref = InstanceSegment()
     entity_ref.update(values)
     entity_ref.save(session=session)
@@ -81,6 +92,9 @@ def instance_segment_create(values, session=None):
 
 
 def instance_info_get_latest(instance_id, session=None):
+    """
+    Get the latest ``InstanceInfo`` object with the given ``instance_id``.
+    """
     if not session:
         session = get_session()
     result = session.query(func.max(InstanceInfo.id)).\
@@ -89,6 +103,9 @@ def instance_info_get_latest(instance_id, session=None):
 
 
 def instance_segment_end(instance_id, end_at, session=None):
+    """
+    End all ``InstanceSegment`` objects with  the given ``instance_id``.
+    """
     if not session:
         session = get_session()
     session.execute(InstanceSegment.__table__.update().
@@ -99,13 +116,33 @@ def instance_segment_end(instance_id, end_at, session=None):
 
 def instances_on_interval(period_start, period_stop, project_id=None):
     """
-    project_id=None means all projects
-    returns dict(key = project_id,
-                 value = dict(
-                     key=instance_id,
-                     value=dict{"created_at", "destroyed_at", "running", "price"}
-                     )
-                )
+    Retrieve statistics for the given interval [``period_start``, ``period_stop``]. 
+    ``project_id=None`` means all projects.
+
+    Example of the returned value:
+
+    .. code-block:: python
+
+        {
+                "systenant": {
+                     "12": {"created_at": datetime.datetime(2011, 1, 1),
+                            "destroyed_at": datetime.datetime(2011, 1, 2),
+                            "running": 86400, "price": 2},
+                     "14": {"created_at": datetime.datetime(2011, 1, 4),
+                            "destroyed_at": datetime.datetime(2011, 2, 1),
+                            "running": 2419200, "price": 14},
+                },
+                "tenant12": {
+                     "24": {"created_at": datetime.datetime(2011, 1, 1),
+                            "destroyed_at": datetime.datetime(2011, 1, 2),
+                            "running": 86400, "price": 12},
+                     "30": {"created_at": datetime.datetime(2011, 1, 4),
+                            "destroyed_at": datetime.datetime(2011, 2, 1),
+                            "running": 2419200, "price": 6},
+                }
+        }
+
+    :returns: a dictionary where keys are project ids and values are project statistics.
     """
     session = get_session()
     result = session.query(InstanceSegment, InstanceInfo).\
@@ -135,7 +172,7 @@ def instances_on_interval(period_start, period_stop, project_id=None):
             inst_by_id[info.instance_id] = inst_descr
         begin_at = max(segment.begin_at, period_start)
         end_at = min(segment.end_at or datetime.utcnow(), period_stop)
-        inst_descr["price"] += spc.calculate(
+        inst_descr["price"] += spc(
             begin_at, end_at, segment.segment_type,
             info.local_gb, info.memory_mb, info.vcpus)
 

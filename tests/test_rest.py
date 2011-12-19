@@ -79,6 +79,9 @@ class TestCase(unittest.TestCase):
         self.stubs = stubout.StubOutForTesting()
 
     def test_billing_application(self):
+        """
+        Test different billing REST API queries.
+        """
         rest_calls = {
             "/projects-all/2011": {
                 "date": "2011-01-01T00:00:00", 

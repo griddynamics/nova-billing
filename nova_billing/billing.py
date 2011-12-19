@@ -20,6 +20,10 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+"""
+This module defines strategies for accounting.
+"""
 from nova_billing import vm_states
 
 
@@ -31,50 +35,63 @@ BILLABLE_PARAMS_WEIGHTS = {
 
 
 def total_seconds(td):
-    """timedelta.total_seconds() 
-    that was introduced only in python 2.7"""
+    """This function is added for portability 
+    because timedelta.total_seconds() 
+    was introduced only in python 2.7."""
     return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
 
 class BasePriceCalculator(object):
-    price = 1
+    """
+    Base class for simple and sophisticated price calculators.
+    """
 
-    def calculate(self, period_start, period_stop, local_gb=None, memory_mb=None, vcpus=None):
-        return total_seconds(period_stop - period_start) * self.price
-
-
-class ActivePriceCalculator(BasePriceCalculator):
-    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
-        self.price += BILLABLE_PARAMS_WEIGHTS['local_gb'] * local_gb
-        self.price += BILLABLE_PARAMS_WEIGHTS['memory_mb'] * memory_mb
-        self.price += BILLABLE_PARAMS_WEIGHTS['vcpus'] * vcpus
-        return super(ActivePriceCalculator, self).calculate(period_start, period_stop)
+    def __call__(self, period_start, period_stop, local_gb, memory_mb, vcpus):
+        raise NotImplementedError
 
 
-class SuspendedPriceCalculator(BasePriceCalculator):
-    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
-        self.price += BILLABLE_PARAMS_WEIGHTS['local_gb'] * local_gb
-        self.price += BILLABLE_PARAMS_WEIGHTS['memory_mb'] * memory_mb
-        return super(SuspendedPriceCalculator, self).calculate(period_start, period_stop)
+class SimplePriceCalculator(BasePriceCalculator):
+    """
+    Price calculator that summarizes weighted disk, RAM, and CPU time.
+    """
+    def __init__(self, local_gb=0, memory_mb=0, vcpus=0):
+        self.local_gb = local_gb
+        self.memory_mb = memory_mb
+        self.vcpus = vcpus
 
-
-class StoppedPriceCalculator(BasePriceCalculator):
-    def calculate(self, period_start, period_stop, local_gb, memory_mb, vcpus):
-        self.price += BILLABLE_PARAMS_WEIGHTS['local_gb'] * local_gb
-        return super(StoppedPriceCalculator, self).calculate(period_start, period_stop)
+    def __call__(self, period_start, period_stop,
+                  local_gb, memory_mb, vcpus):
+        return (self.local_gb * local_gb +
+                self.memory_mb * memory_mb +
+                self.vcpus * vcpus
+                ) * total_seconds(period_stop - period_start)
 
 
 class SegmentPriceCalculator(object):
+    """
+    Calculator class that uses an appropriate strategy to calculate the price.
+    """
     calculators = {}
 
     def __init__(self):
-        self.calculators[vm_states.ACTIVE] = ActivePriceCalculator()
-        self.calculators[vm_states.SUSPENDED] = SuspendedPriceCalculator()
-        self.calculators[vm_states.PAUSED] = SuspendedPriceCalculator()
-        self.calculators[vm_states.STOPPED] = SuspendedPriceCalculator()
-        self.calculators['DEFAULT'] = BasePriceCalculator()
+        self.calculators[vm_states.ACTIVE] = SimplePriceCalculator(
+           BILLABLE_PARAMS_WEIGHTS['local_gb'],
+           BILLABLE_PARAMS_WEIGHTS['memory_mb'],
+           BILLABLE_PARAMS_WEIGHTS['vcpus'])
+        self.calculators[vm_states.SUSPENDED] = SimplePriceCalculator(
+           BILLABLE_PARAMS_WEIGHTS['local_gb'],
+           BILLABLE_PARAMS_WEIGHTS['memory_mb'])
+        self.calculators[vm_states.PAUSED] = SimplePriceCalculator(
+           BILLABLE_PARAMS_WEIGHTS['local_gb'],
+           BILLABLE_PARAMS_WEIGHTS['memory_mb'])
+        self.calculators[vm_states.STOPPED] = SimplePriceCalculator(
+           BILLABLE_PARAMS_WEIGHTS['local_gb'])
+        self.calculators['DEFAULT'] = SimplePriceCalculator(
+           BILLABLE_PARAMS_WEIGHTS['local_gb'],
+           BILLABLE_PARAMS_WEIGHTS['memory_mb'],
+           BILLABLE_PARAMS_WEIGHTS['vcpus'])
 
-    def calculate(self, period_start, period_stop, state,
+    def __call__(self, period_start, period_stop, state,
                   local_gb, memory_mb, vcpus):
         calc = self.calculators.get(state, self.calculators['DEFAULT'])
-        return calc.calculate(period_start, period_stop, local_gb, memory_mb, vcpus)
+        return calc(period_start, period_stop, local_gb, memory_mb, vcpus)

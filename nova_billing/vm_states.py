@@ -22,7 +22,7 @@
 """
 Possible vm states for instances.
 
-There are integers for string states from nova.compute.vm_states.
+There are integers for string states from ``nova.compute.vm_states``.
 
 The following states are stored in the database:
 * ACTIVE
