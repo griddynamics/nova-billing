@@ -43,17 +43,17 @@ class FakeDbApi(object):
     def instance_info_create(self, values, session=None):
         values["id"] = len(self.db["instance_info"]) + 1
         self.db["instance_info"].append(values)
-        instance_info_ref = models.InstanceInfo()
-        instance_info_ref.update(values)
-        return instance_info_ref
+        entity_ref = models.InstanceInfo()
+        entity_ref.update(values)
+        return entity_ref
 
     def instance_segment_create(self, values, session=None):
         values["id"] = len(self.db["instance_segment"]) + 1
         values["end_at"] = values.get("end_at", None)
         self.db["instance_segment"].append(values)
-        instance_segment_ref = models.InstanceSegment()
-        instance_segment_ref.update(values)
-        return instance_segment_ref
+        entity_ref = models.InstanceSegment()
+        entity_ref.update(values)
+        return entity_ref
 
     def instance_info_get_latest(self, instance_id, session=None):
         for instance_info in reversed(self.db["instance_info"]):

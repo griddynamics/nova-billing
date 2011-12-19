@@ -22,12 +22,26 @@
 """
 Possible vm states for instances.
 
-There are integers for string states from nova.compute.vm_states
+There are integers for string states from nova.compute.vm_states.
+
+The following states are stored in the database:
+* ACTIVE
+* PAUSED
+* SUSPENDED
+* STOPPED
 """
 
 ACTIVE = 0
+BUILDING = 1
+REBUILDING = 2
 
 PAUSED = 3
 SUSPENDED = 4
+RESCUED = 5
+DELETED = 6
 STOPPED = 7
 
+MIGRATING = 8
+RESIZING = 9
+
+ERROR = 10
