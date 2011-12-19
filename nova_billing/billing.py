@@ -22,17 +22,25 @@
 
 from nova_billing import vm_states
 
+
 BILLABLE_PARAMS_WEIGHTS = {
     'local_gb' : 1,
-     'memory_mb' : 2,
-     'vcpus' : 3
+    'memory_mb' : 2,
+    'vcpus' : 3
 }
+
+
+def total_seconds(td):
+    """timedelta.total_seconds() 
+    that was introduced only in python 2.7"""
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+
 
 class BasePriceCalculator(object):
     price = 1
 
     def calculate(self, period_start, period_stop, local_gb=None, memory_mb=None, vcpus=None):
-        return (period_stop - period_start).total_seconds() * self.price
+        return total_seconds(period_stop - period_start) * self.price
 
 
 class ActivePriceCalculator(BasePriceCalculator):

@@ -48,7 +48,7 @@ def datetime_to_str(dt):
     Convert datetime.datetime instance to string
     Used for JSONization
     """
-    return dt.isoformat()
+    return dt.isoformat() if dt else None
 
 
 class BillingController(object):
