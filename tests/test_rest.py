@@ -38,13 +38,13 @@ class FakeDbApi(object):
     def instances_on_interval(period_start, period_stop, project_id=None):
         total_statistics = {
             "systenant": {
-                "12": {
+                12: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
                     "running": 1,
                     "usage": {"local_gb": 12, "memory_mb": 45, "vcpus": 39},
                 },
-                "14": {
+                14: {
                     "created_at": datetime.datetime(2011, 1, 4),
                     "destroyed_at": datetime.datetime(2011, 2, 1),
                     "running": 13,
@@ -52,19 +52,19 @@ class FakeDbApi(object):
                 },
             },
             "tenant12": {
-                "54": {
+                54: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
                     "running": 111,
                     "usage": {"local_gb": 73, "memory_mb": 66, "vcpus": 39},
                 },
-                "67": {
+                67: {
                     "created_at": datetime.datetime(2011, 2, 1),
                     "destroyed_at": datetime.datetime(2011, 2, 3),
                     "running": 513,
                     "usage": {"local_gb": 57, "memory_mb": 99, "vcpus": 03},
                 },
-                "90": {
+                90: {
                     "created_at": datetime.datetime(2013, 3, 4),
                     "destroyed_at": datetime.datetime(2013, 5, 6),
                     "running": 1013,
@@ -169,7 +169,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-01T00:00:00Z", 
                                 "destroyed_at": "2011-01-02T00:00:00Z", 
                                 "running": 111, 
-                                "name": "54"
+                                "id": 54
                             }, 
                             "67": {
                                 "usage": {
@@ -180,7 +180,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-02-01T00:00:00Z", 
                                 "destroyed_at": "2011-02-03T00:00:00Z", 
                                 "running": 513, 
-                                "name": "67"
+                                "id": 67
                             }
                         }, 
                         "running": 624, 
@@ -204,7 +204,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-01T00:00:00Z", 
                                 "destroyed_at": "2011-01-02T00:00:00Z", 
                                 "running": 1, 
-                                "name": "12"
+                                "id": 12
                             }, 
                             "14": {
                                 "usage": {
@@ -215,7 +215,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-04T00:00:00Z", 
                                 "destroyed_at": "2011-02-01T00:00:00Z", 
                                 "running": 13, 
-                                "name": "14"
+                                "id": 14
                             }
                         }, 
                         "running": 14, 
@@ -245,7 +245,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-01T00:00:00Z", 
                                 "destroyed_at": "2011-01-02T00:00:00Z", 
                                 "running": 111, 
-                                "name": "54"
+                                "id": 54
                             }
                         }, 
                         "running": 111, 
@@ -269,7 +269,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-01T00:00:00Z", 
                                 "destroyed_at": "2011-01-02T00:00:00Z", 
                                 "running": 1, 
-                                "name": "12"
+                                "id": 12
                             }
                         }, 
                         "running": 1, 
@@ -316,7 +316,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-01T00:00:00Z", 
                                 "destroyed_at": "2011-01-02T00:00:00Z", 
                                 "running": 111, 
-                                "name": "54"
+                                "id": 54
                             }, 
                             "67": {
                                 "usage": {
@@ -327,7 +327,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-02-01T00:00:00Z", 
                                 "destroyed_at": "2011-02-03T00:00:00Z", 
                                 "running": 513, 
-                                "name": "67"
+                                "id": 67
                             }
                         }, 
                         "running": 624, 
@@ -357,7 +357,7 @@ class TestCase(unittest.TestCase):
                                 "created_at": "2011-01-01T00:00:00Z", 
                                 "destroyed_at": "2011-01-02T00:00:00Z", 
                                 "running": 111, 
-                                "name": "54"
+                                "id": 54
                             }
                         }, 
                         "running": 111, 

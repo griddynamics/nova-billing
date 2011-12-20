@@ -121,13 +121,13 @@ def instances_on_interval(period_start, period_stop, project_id=None):
 
         {
             "systenant": {
-                "12": {
+                12: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
                     "running": 86400,
                     "usage": {"local_gb": 56, "memory_mb": 89, "vcpus": 4},
                 },
-                "14": {
+                14: {
                     "created_at": datetime.datetime(2011, 1, 4),
                     "destroyed_at": datetime.datetime(2011, 2, 1),
                     "running": 2419200,
@@ -135,7 +135,7 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                 },
             },
             "tenant12": {
-                "24": {
+                24: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
                     "running": 86400,

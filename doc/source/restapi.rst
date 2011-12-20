@@ -52,7 +52,7 @@ Examples::
                     "55": {
                         "created_at": "2011-12-15T18:22:33.887135Z", 
                         "destroyed_at": null, 
-                        "name": 55, 
+                        "id": 55, 
                         "running": 327822, 
                         "usage": {
                             "local_gb": 6556440, 
@@ -63,7 +63,7 @@ Examples::
                     "56": {
                         "created_at": "2011-12-15T18:23:06.452062Z", 
                         "destroyed_at": "2011-12-15T18:52:05.391688Z", 
-                        "name": 56, 
+                        "id": 56, 
                         "running": 1738, 
                         "usage": {
                             "local_gb": 34760, 
@@ -94,7 +94,7 @@ Examples::
                     "55": {
                         "created_at": "2011-12-15T18:22:33.887135Z", 
                         "destroyed_at": null, 
-                        "name": 55, 
+                        "id": 55, 
                         "running": 327822, 
                         "usage": {
                             "local_gb": 6556440, 
@@ -105,7 +105,7 @@ Examples::
                     "56": {
                         "created_at": "2011-12-15T18:23:06.452062Z", 
                         "destroyed_at": "2011-12-15T18:52:05.391688Z", 
-                        "name": 56, 
+                        "id": 56, 
                         "running": 1738, 
                         "usage": {
                             "local_gb": 34760, 

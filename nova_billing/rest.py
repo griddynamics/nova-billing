@@ -106,7 +106,7 @@ class BillingController(object):
                 project_dict["running"] += instance_statistics["running"]
                 dict_add(project_dict["usage"], instance_statistics["usage"])
                 if show_instances:
-                    instance_dict = {"name": instance_id}
+                    instance_dict = {"id": instance_id}
                     for key in "running", "usage":
                         instance_dict[key] = instance_statistics[key]
                     for key in "created_at", "destroyed_at":
