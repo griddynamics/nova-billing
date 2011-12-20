@@ -21,11 +21,12 @@ Developer Docs
    devref/index
 
 
-REST API
-========
+User Docs
+=========
 .. toctree::
    :maxdepth: 1
 
+   quickstart
    restapi
 
 
