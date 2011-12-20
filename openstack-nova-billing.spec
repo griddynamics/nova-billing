@@ -8,8 +8,9 @@ Name:             openstack-nova-billing
 Version:          2011.3
 Release:          3
 Summary:          A nova billing server
-License:          Apache 2.0
-Vendor:           Grid Dynamics Consulting Services, Inc.
+License:          GNU GPL v3
+Vendor:           Grid Dynamics International, Inc.
+URL:              http://www.griddynamics.com/openstack
 Group:            Development/Languages/Python
 
 Source0:          %{name}-%{version}.tar.gz

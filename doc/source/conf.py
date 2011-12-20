@@ -212,7 +212,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'nova-billing', u'nova-billing Documentation',
-     [u'Alessio Ababilov, Ivan Kolodyazhny'], 1)
+     [u'Alessio Ababilov, Ivan Kolodyazhny (GridDynamics Openstack Core Team, (c) GridDynamics)'], 1)
 ]
 
 sys.path.append(os.path.abspath('_themes'))
