@@ -15,7 +15,7 @@ Group:            Development/Languages/Python
 
 Source0:          %{name}-%{version}.tar.gz
 BuildRoot:        %{_tmppath}/%{name}-%{version}-build
-BuildRequires:    python-devel python-setuptools
+BuildRequires:    python-devel python-setuptools make
 BuildArch:        noarch
 Requires:         openstack-nova
 Requires:         start-stop-daemon
@@ -28,6 +28,16 @@ protocol, and the Redis KVS.
 
 This package contains the nova billing server.
 
+
+%package doc
+Summary:        Documentation for %{name}
+Group:          Documentation
+Requires:       %{name} = %{version}-%{release}
+
+%description doc
+Documentation and examples for %{name}.
+
+
 %prep
 %setup -q -n %{name}-%{version}
 
@@ -38,7 +48,7 @@ This package contains the nova billing server.
 %__rm -rf %{buildroot}
 
 %{__python} setup.py install -O1 --skip-build --prefix=%{_prefix} --root=%{buildroot}
-
+make -C doc html
 install -p -D -m 755 redhat/openstack-nova-billing.init %{buildroot}%{_initrddir}/%{name}
 
 %clean
@@ -64,5 +74,9 @@ fi
 %{_initrddir}/*
 %{python_sitelib}/%{mod_name}*
 %{_usr}/bin/*
+
+%files doc
+%defattr(-,root,root,-)
+%doc doc/build/html
 
 %changelog
