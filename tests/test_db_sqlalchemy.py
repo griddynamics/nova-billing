@@ -20,8 +20,6 @@
 Tests for nova_billing.db.sqlalchemy.api
 """
 
-
-import json
 import datetime
 import os
 
@@ -54,6 +52,9 @@ class TestCase(unittest.TestCase):
     instance_segment = {
         "begin_at": datetime.datetime(2011, 1, 1, 0, 0),
         "segment_type": 0}
+
+    interval_start = datetime.datetime(2010, 1, 1, 0, 0)
+    interval_end = datetime.datetime(2011, 1, 1, 0, 1)
 
     def clear_db(self):
         os.remove(self.sqlite_file)
@@ -100,3 +101,40 @@ class TestCase(unittest.TestCase):
         instance_segment["instance_info_id"] = instance_info_ref.id
         self.assertEqual(instance_info_ref.id,
             db_api.instance_info_get_latest(self.instance_id))
+
+    def test_instances_on_interval(self):
+        self.init_instance_segment_data()
+        instances = db_api.instances_on_interval(
+            self.interval_start, self.interval_end)
+        self.assertTrue(instances.has_key("systenant"))
+
+        instance = instances["systenant"][self.instance_id]
+        self.assertTrue(instance.has_key("created_at"))
+        self.assertTrue(instance.has_key("destroyed_at"))
+        self.assertTrue(instance.has_key("running"))
+        self.assertTrue(instance.has_key("usage"))
+
+        usage_info = instance["usage"]
+        self.assertTrue(usage_info.has_key("local_gb"))
+        self.assertTrue(usage_info.has_key("memory_mb"))
+        self.assertTrue(usage_info.has_key("vcpus"))
+
+        self.assertEquals(usage_info["vcpus"], 60)
+        self.assertEquals(usage_info["memory_mb"], 122880)
+        self.assertEquals(usage_info["local_gb"], 1200)
+
+    def test_instances_on_interval_by_project(self):
+        self.init_instance_segment_data()
+        instances = db_api.instances_on_interval(
+            self.interval_start, self.interval_end, "testtenant")
+        self.assertFalse(instances.has_key("systenant"))
+
+    def init_instance_segment_data(self):
+        instance_segment = self.instance_segment.copy()
+        instance_info = self.instance_info.copy()
+        instance_info_ref = db_api.instance_info_create(instance_info)
+        instance_segment["instance_info_id"] = instance_info_ref.id
+        db_api.instance_segment_create(instance_segment)
+        db_api.instance_segment_end(self.instance_id,
+            datetime.datetime(2011, 1, 2, 0, 0))
+
