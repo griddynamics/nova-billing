@@ -1,6 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-#    Openstack Nova Billing
+#    Nova Billing
 #    Copyright (C) GridDynamics Openstack Core Team, GridDynamics
 #
 #    This program is free software: you can redistribute it and/or modify

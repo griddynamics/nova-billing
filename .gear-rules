@@ -1,2 +1,2 @@
 copy: redhat/*.init
-tar.gz: . name=openstack-nova-billing-@version@ base=openstack-nova-billing-@version@
+tar.gz: . name=nova-billing-@version@ base=nova-billing-@version@

@@ -18,11 +18,11 @@ The server saves logs to ``/var/log/nova/nova-billing.log``.
 RPM Building
 ===========================
 
-Clone nova-billing git repository, rename the top dir to openstack-nova-billing-2011.3,
-and tar it to openstack-nova-billing-2011.3.tar.gz. Place it to rpmbuild/SOURCES
+Clone nova-billing git repository, rename the top dir to nova-billing-0.0.1,
+and tar it to nova-billing-0.0.1.tar.gz. Place it to rpmbuild/SOURCES
 directory and run::
 
-    $ rpmbuild -ba openstack-nova-billing.spec
+    $ rpmbuild -ba nova-billing.spec
 
 
 Quickstart
@@ -30,11 +30,11 @@ Quickstart
 
 Install the package::
 
-    # yum install openstack-nova-billing
+    # yum install nova-billing
 
 Start the server::
 
-    # /etc/init.d/openstack-nova-billing start
+    # /etc/init.d/nova-billing start
 
 Now instance state changes will be stored to a database.
 

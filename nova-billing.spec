@@ -4,9 +4,9 @@
 
 %define mod_name nova_billing
 
-Name:             openstack-nova-billing
-Version:          2011.3
-Release:          3
+Name:             nova-billing
+Version:          0.0.1
+Release:          1
 Summary:          A nova billing server
 License:          GNU GPL v3
 Vendor:           Grid Dynamics International, Inc.
@@ -49,7 +49,7 @@ Documentation and examples for %{name}.
 
 %{__python} setup.py install -O1 --skip-build --prefix=%{_prefix} --root=%{buildroot}
 make -C doc html
-install -p -D -m 755 redhat/openstack-nova-billing.init %{buildroot}%{_initrddir}/%{name}
+install -p -D -m 755 redhat/nova-billing.init %{buildroot}%{_initrddir}/%{name}
 
 %clean
 %__rm -rf %{buildroot}

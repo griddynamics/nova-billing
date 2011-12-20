@@ -3,11 +3,11 @@ Quickstart
 
 Install the package::
 
-    # yum install openstack-nova-billing
+    # yum install nova-billing
 
 Start the server::
 
-    # /etc/init.d/openstack-nova-billing start
+    # /etc/init.d/nova-billing start
 
 Now instance state changes will be stored to a database.
 

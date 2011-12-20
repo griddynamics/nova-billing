@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-#    Openstack Nova Billing
+#    Nova Billing
 #    Copyright (C) GridDynamics Openstack Core Team, GridDynamics
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='nova-billing',
-      version='2011.3',
+      version='0.0.1',
       license='GNU GPL v3',
       description='cloud computing fabric controller',
       author='Alessio Ababilov, Ivan Kolodyazhny (GridDynamics Openstack Core Team, (c) GridDynamics)',

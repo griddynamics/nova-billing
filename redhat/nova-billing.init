@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# nova-billing	OpenStack Nova Billing Server
+# nova-billing	Nova Billing Server
 #
 # chkconfig: 2345 96 04
 #
@@ -8,14 +8,14 @@
 # pidfile: /var/run/nova/nova-billing.pid
 
 ### BEGIN INIT INFO
-# Provides: openstack-nova-billing
+# Provides: nova-billing
 # Required-Start: $local_fs $network $syslog
 # Required-Stop: $local_fs $syslog
 # Should-Start: $syslog
 # Should-Stop: $network $syslog
 # Default-Start: 3 4 5
 # Default-Stop: 0 2 1 6
-# Short-Description: OpenStack Nova Billing Server
+# Short-Description: Nova Billing Server
 # Description: The Billing Server listens to AMQP server,
 #              stores instance start/stop information,
 #              and allows to get it by REST API
@@ -24,12 +24,12 @@
 # Source function library.
 . /etc/init.d/functions
 
-prog="OpenStack Nova Billing Server"
+prog="Nova Billing Server"
 suffix="billing"
 flgfile=/etc/nova/nova.conf
 logfile=/var/log/nova/nova-$suffix.log
 pidfile=/var/run/nova/nova-$suffix.pid
-lckfile=/var/lock/subsys/openstack-nova-$suffix
+lckfile=/var/lock/subsys/nova-$suffix
 binfile=/usr/bin/nova-$suffix
 
 start() {
@@ -109,7 +109,7 @@ case "$1" in
 	fi
 	;;
     *)
-	echo "Usage: service openstack-nova-$suffix {start|stop|status|restart|condrestart}"
+	echo "Usage: service nova-$suffix {start|stop|status|restart|condrestart}"
 	exit 1
 	;;
 esac

@@ -1,4 +1,4 @@
-OpenStack Nova Billing REST API
+Nova Billing REST API
 ===============================
 
 Nova billing daemon supports two forms of requests.
