@@ -44,6 +44,7 @@ class TestCase(unittest.TestCase):
         """Run before each test method to initialize test environment."""
         super(TestCase, self).setUp()
         self.stubs = stubout.StubOutForTesting()
+        self.clear_db()
 
     instance_id = 1600
     instance_info = {"memory_mb": 2048,
@@ -61,8 +62,6 @@ class TestCase(unittest.TestCase):
         db_api.configure_backend()
 
     def test_instance_info_create(self):
-        self.clear_db()
-
         instance_info = self.instance_info.copy()
         instance_info_ref = db_api.instance_info_create(instance_info)
 
@@ -70,8 +69,6 @@ class TestCase(unittest.TestCase):
 
     def test_instance_segment(self):
         """ Test instance_info_create and instance_segment_end"""
-        self.clear_db()
-
         instance_info = self.instance_info.copy()
         instance_segment = self.instance_segment.copy()
         instance_info_ref = db_api.instance_info_create(instance_info)
@@ -84,8 +81,6 @@ class TestCase(unittest.TestCase):
             datetime.datetime(2011, 1, 2, 0, 0))
 
     def test_instance_info_get_latest(self):
-        self.clear_db()
-
         instance_segment = self.instance_segment.copy()
         instance_info = self.instance_info.copy()
         instance_info_ref = db_api.instance_info_create(instance_info)
