@@ -19,30 +19,45 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
-Possible vm states for instances.
-
-There are integers for string states from ``nova.compute.vm_states``.
-
-The following states are stored in the database:
-
-* ACTIVE
-* PAUSED
-* SUSPENDED
-* STOPPED
+Usage calculations for different VM states.
 """
 
-ACTIVE = 0
-BUILDING = 1
-REBUILDING = 2
+from nova_billing import vm_states
 
-PAUSED = 3
-SUSPENDED = 4
-RESCUED = 5
-DELETED = 6
-STOPPED = 7
 
-MIGRATING = 8
-RESIZING = 9
+def total_seconds(td):
+    """This function is added for portability 
+    because timedelta.total_seconds() 
+    was introduced only in python 2.7."""
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
-ERROR = 10
+
+used_resources = {
+    vm_states.ACTIVE: ("local_gb", "memory_mb", "vcpus"),
+    vm_states.SUSPENDED: ("local_gb", "memory_mb"),
+    vm_states.PAUSED: ("local_gb", "memory_mb"),
+    vm_states.STOPPED: ("local_gb", ),
+}
+
+
+def usage_add(usage, begin_at, end_at, vm_state, instance_info):
+    """
+    Increment used resource statistics depending on ``vm_state``.
+    Statistics is measured in (resource unit * second).
+    """
+    length = total_seconds(end_at - begin_at)
+    for key in ("local_gb", "memory_mb", "vcpus"):
+        usage[key] = (usage.get(key, 0) +
+            (length * instance_info[key]
+             if key in used_resources.get(vm_state, [])
+             else 0))
+
+
+def dict_add(a, b):
+    """
+    Increment all keys in ``a`` on keys in ``b``.
+    """
+    for key in b:
+        a[key] = a.get(key, 0) + b[key]

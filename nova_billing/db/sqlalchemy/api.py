@@ -35,7 +35,7 @@ from nova import utils
 from nova_billing.db.sqlalchemy import models
 from nova_billing.db.sqlalchemy.models import InstanceSegment, InstanceInfo
 from nova_billing.db.sqlalchemy.session import get_session, get_engine
-from nova_billing.billing import SegmentPriceCalculator, total_seconds
+from nova_billing.usage import usage_add, total_seconds
 
 
 FLAGS = flags.FLAGS
@@ -124,22 +124,28 @@ def instances_on_interval(period_start, period_stop, project_id=None):
     .. code-block:: python
 
         {
-                "systenant": {
-                     "12": {"created_at": datetime.datetime(2011, 1, 1),
-                            "destroyed_at": datetime.datetime(2011, 1, 2),
-                            "running": 86400, "price": 2},
-                     "14": {"created_at": datetime.datetime(2011, 1, 4),
-                            "destroyed_at": datetime.datetime(2011, 2, 1),
-                            "running": 2419200, "price": 14},
+            "systenant": {
+                "12": {
+                    "created_at": datetime.datetime(2011, 1, 1),
+                    "destroyed_at": datetime.datetime(2011, 1, 2),
+                    "running": 86400,
+                    "usage": {"local_gb": 56, "memory_mb": 89, "vcpus": 4},
                 },
-                "tenant12": {
-                     "24": {"created_at": datetime.datetime(2011, 1, 1),
-                            "destroyed_at": datetime.datetime(2011, 1, 2),
-                            "running": 86400, "price": 12},
-                     "30": {"created_at": datetime.datetime(2011, 1, 4),
-                            "destroyed_at": datetime.datetime(2011, 2, 1),
-                            "running": 2419200, "price": 6},
-                }
+                "14": {
+                    "created_at": datetime.datetime(2011, 1, 4),
+                    "destroyed_at": datetime.datetime(2011, 2, 1),
+                    "running": 2419200,
+                    "usage": {"local_gb": 18, "memory_mb": 45, "vcpus": 5},
+                },
+            },
+            "tenant12": {
+                "24": {
+                    "created_at": datetime.datetime(2011, 1, 1),
+                    "destroyed_at": datetime.datetime(2011, 1, 2),
+                    "running": 86400,
+                    "usage": {"local_gb": 33, "memory_mb": 12, "vcpus": 8},
+                },
+            }
         }
 
     :returns: a dictionary where keys are project ids and values are project statistics.
@@ -153,7 +159,6 @@ def instances_on_interval(period_start, period_stop, project_id=None):
     if project_id:
         result = result.filter(InstanceInfo.project_id == project_id)
 
-    spc = SegmentPriceCalculator()
     retval = {}
     inst_by_id = {}
     for segment, info in result:
@@ -166,15 +171,14 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                 "created_at": None,
                 "destroyed_at": None,
                 "running": 0,
-                "price": 0
+                "usage": {}
             }
             retval[info.project_id][info.instance_id] = inst_descr
             inst_by_id[info.instance_id] = inst_descr
         begin_at = max(segment.begin_at, period_start)
         end_at = min(segment.end_at or datetime.utcnow(), period_stop)
-        inst_descr["price"] += spc(
-            begin_at, end_at, segment.segment_type,
-            info.local_gb, info.memory_mb, info.vcpus)
+        usage_add(inst_descr["usage"], begin_at, end_at,
+                  segment.segment_type, info)
 
     result = session.query(InstanceSegment,
         func.min(InstanceSegment.begin_at).label("min_start"),

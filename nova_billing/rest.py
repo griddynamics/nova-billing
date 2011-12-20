@@ -35,6 +35,7 @@ from nova import wsgi as base_wsgi
 from nova.api.openstack import wsgi as os_wsgi
 
 from nova_billing.db import api as db_api
+from nova_billing.usage import dict_add
 
 
 FLAGS = flags.FLAGS
@@ -48,7 +49,7 @@ def datetime_to_str(dt):
     Convert datetime.datetime instance to string.
     Used for JSONization.
     """
-    return dt.isoformat() if dt else None
+    return ("%sZ" % dt.isoformat()) if dt else None
 
 
 class BillingController(object):
@@ -103,14 +104,14 @@ class BillingController(object):
                      project_id),
                 "instances_count": len(project_statistics),
             }
-            for key in "running", "price":
-                project_dict[key] = 0
+            project_dict["running"] = 0
+            project_dict["usage"] = {"local_gb": 0, "memory_mb": 0, "vcpus": 0}
             for instance_id, instance_statistics in project_statistics.items():
-                for key in "running", "price":
-                    project_dict[key] += instance_statistics[key]
+                project_dict["running"] += instance_statistics["running"]
+                dict_add(project_dict["usage"], instance_statistics["usage"])
                 if show_instances:
                     instance_dict = {"name": instance_id}
-                    for key in "running", "price":
+                    for key in "running", "usage":
                         instance_dict[key] = instance_statistics[key]
                     for key in "created_at", "destroyed_at":
                         instance_dict[key] = datetime_to_str(instance_statistics[key])
