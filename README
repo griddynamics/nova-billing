@@ -1,7 +1,3 @@
-=============================
-Openstack Nova Billing README
-=============================
-
 Overview
 ===========================
 
@@ -22,7 +18,7 @@ The server saves logs to ``/var/log/nova/nova-billing.log``.
 RPM Building
 ===========================
 
-Clone git repository, rename the top dir to openstack-nova-billing-2011.3,
+Clone nova-billing git repository, rename the top dir to openstack-nova-billing-2011.3,
 and tar it to openstack-nova-billing-2011.3.tar.gz. Place it to rpmbuild/SOURCES
 directory and run::
 
@@ -42,103 +38,27 @@ Start the server::
 
 Now instance state changes will be stored to a database.
 
-
-REST API
-===========================
-
-Nova billing daemon supports two forms of requests.
-
-#. ``/projects/{project}/{time period}``.
-#. ``/projects-all/{time period}``.
-
-The first form retrieves statistics for the given project.
-The second form retrieves data for all projects.
-
-Each form has three variants.
-
-#. Report for a year: ``/projects/{project}/{year}`` and ``/projects-all/{year}``.
-#. Report for a month: ``/projects/{project}/{year}/{month}`` and ``/projects-all/{year}/{month}``.
-#. Report for a day: ``/projects/{project}/{year}/{month}/{day}`` and ``/projects-all/{year}/{month}/{day}``.
-
-``month`` is an integer between 1 (January) and 12 (December).
-
-``day`` is an integer between 1 and the number of days in the given month and year.
-
-
-Examples::
+Check that the daemon returns reports::
 
     $ curl http://localhost:8787/projects/systenant/2011 | python -mjson.tool
+
+
+Its output should look like this::
+
     {
-        "date": "2011-01-01T00:00:00", 
+        "date": "2011-01-01T00:00:00Z", 
         "duration": "year", 
         "projects": {
             "systenant": {
                 "instances_count": 2, 
                 "name": "systenant", 
-                "price": 1066472622, 
+                "usage": {
+                    "local_gb": 12,
+                    "memory_mb": 45,
+                    "vcpus": 39
+                },
                 "running": 257115, 
                 "url": "http://127.0.0.1:8787/projects/systenant"
             }
         }
     }
-    $ curl http://localhost:8787/projects/systenant/2011/12 | python -mjson.tool
-    {
-        "date": "2011-12-01T00:00:00", 
-        "duration": "month", 
-        "projects": {
-            "systenant": {
-                "instances": {
-                    "55": {
-                        "created_at": "2011-12-15T18:22:33.887135", 
-                        "destroyed_at": null, 
-                        "name": 55, 
-                        "price": 1052478720, 
-                        "running": 255456
-                    }, 
-                    "56": {
-                        "created_at": "2011-12-15T18:23:06.452062", 
-                        "destroyed_at": "2011-12-15T18:52:05.391688", 
-                        "name": 56, 
-                        "price": 14319382, 
-                        "running": 1738
-                    }
-                }, 
-                "instances_count": 2, 
-                "name": "systenant", 
-                "price": 1066798102, 
-                "running": 257194, 
-                "url": "http://127.0.0.1:8787/projects/systenant"
-            }
-        }
-    }
-    $ curl http://localhost:8787/projects-all/2011/12 | python -mjson.tool
-    {
-        "date": "2011-12-01T00:00:00", 
-        "duration": "month", 
-        "projects": {
-            "systenant": {
-                "instances": {
-                    "55": {
-                        "created_at": "2011-12-15T18:22:33.887135", 
-                        "destroyed_at": null, 
-                        "name": 55, 
-                        "price": 1052672360, 
-                        "running": 255503
-                    }, 
-                    "56": {
-                        "created_at": "2011-12-15T18:23:06.452062", 
-                        "destroyed_at": "2011-12-15T18:52:05.391688", 
-                        "name": 56, 
-                        "price": 14319382, 
-                        "running": 1738
-                    }
-                }, 
-                "instances_count": 2, 
-                "name": "systenant", 
-                "price": 1066991742, 
-                "running": 257241, 
-                "url": "http://127.0.0.1:8787/projects/systenant"
-            }
-        }
-    }
-
