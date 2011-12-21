@@ -86,41 +86,51 @@ class BillingController(object):
                 year += 1
             period_stop = datetime.datetime(year=year, month=month, day=day)
 
+        queried_project = arg_dict.get("project", None)
         total_statistics = db_api.instances_on_interval(
-            period_start, period_stop, arg_dict.get("project", None))
-        show_instances = not duration.startswith("y")
+            period_start, period_stop, queried_project)
+        show_instances = not duration.startswith("y") and queried_project
         projects = {}
+        if queried_project and not total_statistics.has_key(queried_project):
+            total_statistics[queried_project] = {}
+
         for project_id, project_statistics in total_statistics.items():
-            instances = {}
             project_dict = {
                 "name": project_id,
                 "url": "http://%s:%s/projects/%s" %
-                    (req.environ["SERVER_NAME"],
-                     req.environ["SERVER_PORT"],
-                     project_id),
+                       (req.environ["SERVER_NAME"],
+                        req.environ["SERVER_PORT"],
+                        project_id),
                 "instances_count": len(project_statistics),
+                "running": 0,
+                "usage": {"local_gb": 0, "memory_mb": 0, "vcpus": 0}
             }
-            project_dict["running"] = 0
-            project_dict["usage"] = {"local_gb": 0, "memory_mb": 0, "vcpus": 0}
+            instances = []
             for instance_id, instance_statistics in project_statistics.items():
                 project_dict["running"] += instance_statistics["running"]
                 dict_add(project_dict["usage"], instance_statistics["usage"])
                 if show_instances:
-                    instance_dict = {"id": instance_id}
+                    instance_dict = {"instance_id": instance_id}
                     for key in "running", "usage":
                         instance_dict[key] = instance_statistics[key]
                     for key in "created_at", "destroyed_at":
                         instance_dict[key] = datetime_to_str(instance_statistics[key])
-                    instances[instance_id] = instance_dict
+                    instances.append(instance_dict)
 
             if show_instances:
                 project_dict["instances"] = instances
+            for key in project_dict["usage"]:
+                project_dict["usage"][key] /= 3600.
+            project_dict["running"] /= 3600.
             projects[project_id] = project_dict
         ans_dict = {
-            "date": datetime_to_str(period_start),
-            "duration": duration,
-            "projects": projects
+            "period_start": datetime_to_str(period_start),
+            "period_end": datetime_to_str(period_stop)
         }
+        if queried_project:
+            ans_dict["project"] = projects[queried_project]
+        else:
+            ans_dict["projects"] = projects
         return webob.Response(json.dumps(ans_dict),
                               content_type='application/json')
 
@@ -142,9 +152,6 @@ class BillingApplication(base_wsgi.Router):
         mapper.connect(None, "/projects/{project}/{year}",
                         controller=BillingController(),
                         requirements=requirements)
-        mapper.connect(None, "/projects/{project}",
-                        controller=BillingController(),
-                        requirements=requirements)
         mapper.connect(None, "/projects-all/{year}/{month}/{day}",
                         controller=BillingController(),
                         requirements=requirements)
@@ -152,9 +159,6 @@ class BillingApplication(base_wsgi.Router):
                         controller=BillingController(),
                         requirements=requirements)
         mapper.connect(None, "/projects-all/{year}",
-                        controller=BillingController(),
-                        requirements=requirements)
-        mapper.connect(None, "/projects-all",
                         controller=BillingController(),
                         requirements=requirements)
         super(BillingApplication, self).__init__(mapper)

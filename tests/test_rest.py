@@ -41,34 +41,34 @@ class FakeDbApi(object):
                 12: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
-                    "running": 1,
-                    "usage": {"local_gb": 12, "memory_mb": 45, "vcpus": 39},
+                    "running": 3600 * 1,
+                    "usage": {"local_gb": 3600 * 12, "memory_mb": 3600 * 45, "vcpus": 3600 * 39},
                 },
                 14: {
                     "created_at": datetime.datetime(2011, 1, 4),
                     "destroyed_at": datetime.datetime(2011, 2, 1),
-                    "running": 13,
-                    "usage": {"local_gb": 67, "memory_mb": 10, "vcpus": 41},
+                    "running": 3600 * 13,
+                    "usage": {"local_gb": 3600 * 67, "memory_mb": 3600 * 10, "vcpus": 3600 * 41},
                 },
             },
             "tenant12": {
                 54: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
-                    "running": 111,
-                    "usage": {"local_gb": 73, "memory_mb": 66, "vcpus": 39},
+                    "running": 3600 * 111,
+                    "usage": {"local_gb": 3600 * 73, "memory_mb": 3600 * 66, "vcpus": 3600 * 39},
                 },
                 67: {
                     "created_at": datetime.datetime(2011, 2, 1),
                     "destroyed_at": datetime.datetime(2011, 2, 3),
-                    "running": 513,
-                    "usage": {"local_gb": 57, "memory_mb": 99, "vcpus": 03},
+                    "running": 3600 * 513,
+                    "usage": {"local_gb": 3600 * 57, "memory_mb": 3600 * 99, "vcpus": 3600 * 03},
                 },
                 90: {
                     "created_at": datetime.datetime(2013, 3, 4),
                     "destroyed_at": datetime.datetime(2013, 5, 6),
-                    "running": 1013,
-                    "usage": {"local_gb": 20, "memory_mb": 51, "vcpus": 43},
+                    "running": 3600 * 1013,
+                    "usage": {"local_gb": 3600 * 20, "memory_mb": 3600 * 51, "vcpus": 3600 * 43},
                 },
             }
         }
@@ -95,279 +95,199 @@ class TestCase(unittest.TestCase):
         Test different billing REST API queries.
         """
         rest_calls = {
-            "/projects-all/2012": {
-                "date": "2012-01-01T00:00:00Z", 
-                "duration": "year", 
+            "/projects-all/2011/1/1": {
+                "period_start": "2011-01-01T00:00:00Z",
                 "projects": {
                     "tenant12": {
-                        "url": "http://localhost:80/projects/tenant12", 
+                        "url": "http://localhost:80/projects/tenant12",
                         "usage": {
-                            "memory_mb": 0, 
-                            "vcpus": 0, 
-                            "local_gb": 0
-                        }, 
-                        "running": 0, 
-                        "instances_count": 0, 
+                            "memory_mb": 66.0,
+                            "vcpus": 39.0,
+                            "local_gb": 73.0
+                        },
+                        "running": 111.0,
+                        "instances_count": 1,
                         "name": "tenant12"
-                    }, 
+                    },
                     "systenant": {
-                        "url": "http://localhost:80/projects/systenant", 
+                        "url": "http://localhost:80/projects/systenant",
                         "usage": {
-                            "memory_mb": 0, 
-                            "vcpus": 0, 
-                            "local_gb": 0
-                        }, 
-                        "running": 0, 
-                        "instances_count": 0, 
+                            "memory_mb": 45.0,
+                            "vcpus": 39.0,
+                            "local_gb": 12.0
+                        },
+                        "running": 1.0,
+                        "instances_count": 1,
                         "name": "systenant"
                     }
-                }
-            },
-            "/projects-all/2011": {
-                "date": "2011-01-01T00:00:00Z", 
-                "duration": "year", 
-                "projects": {
-                    "tenant12": {
-                        "url": "http://localhost:80/projects/tenant12", 
-                        "usage": {
-                            "memory_mb": 165, 
-                            "vcpus": 42, 
-                            "local_gb": 130
-                        }, 
-                        "running": 624, 
-                        "instances_count": 2, 
-                        "name": "tenant12"
-                    }, 
-                    "systenant": {
-                        "url": "http://localhost:80/projects/systenant", 
-                        "usage": {
-                            "memory_mb": 55, 
-                            "vcpus": 80, 
-                            "local_gb": 79
-                        }, 
-                        "running": 14, 
-                        "instances_count": 2, 
-                        "name": "systenant"
-                    }
-                }
+                },
+                "period_end": "2011-01-02T00:00:00Z"
             },
             "/projects-all/2011/01": {
-                "date": "2011-01-01T00:00:00Z", 
-                "duration": "month", 
+                "period_start": "2011-01-01T00:00:00Z",
                 "projects": {
                     "tenant12": {
-                        "instances_count": 2, 
-                        "name": "tenant12", 
-                        "url": "http://localhost:80/projects/tenant12", 
-                        "instances": {
-                            "54": {
-                                "usage": {
-                                    "memory_mb": 66, 
-                                    "vcpus": 39, 
-                                    "local_gb": 73
-                                }, 
-                                "created_at": "2011-01-01T00:00:00Z", 
-                                "destroyed_at": "2011-01-02T00:00:00Z", 
-                                "running": 111, 
-                                "id": 54
-                            }, 
-                            "67": {
-                                "usage": {
-                                    "memory_mb": 99, 
-                                    "vcpus": 3, 
-                                    "local_gb": 57
-                                }, 
-                                "created_at": "2011-02-01T00:00:00Z", 
-                                "destroyed_at": "2011-02-03T00:00:00Z", 
-                                "running": 513, 
-                                "id": 67
-                            }
-                        }, 
-                        "running": 624, 
+                        "url": "http://localhost:80/projects/tenant12",
                         "usage": {
-                            "memory_mb": 165, 
-                            "vcpus": 42, 
-                            "local_gb": 130
-                        }
-                    }, 
-                    "systenant": {
-                        "instances_count": 2, 
-                        "name": "systenant", 
-                        "url": "http://localhost:80/projects/systenant", 
-                        "instances": {
-                            "12": {
-                                "usage": {
-                                    "memory_mb": 45, 
-                                    "vcpus": 39, 
-                                    "local_gb": 12
-                                }, 
-                                "created_at": "2011-01-01T00:00:00Z", 
-                                "destroyed_at": "2011-01-02T00:00:00Z", 
-                                "running": 1, 
-                                "id": 12
-                            }, 
-                            "14": {
-                                "usage": {
-                                    "memory_mb": 10, 
-                                    "vcpus": 41, 
-                                    "local_gb": 67
-                                }, 
-                                "created_at": "2011-01-04T00:00:00Z", 
-                                "destroyed_at": "2011-02-01T00:00:00Z", 
-                                "running": 13, 
-                                "id": 14
-                            }
-                        }, 
-                        "running": 14, 
-                        "usage": {
-                            "memory_mb": 55, 
-                            "vcpus": 80, 
-                            "local_gb": 79
-                        }
-                    }
-                }
-            },
-            "/projects-all/2011/1/1": {
-                "date": "2011-01-01T00:00:00Z", 
-                "duration": "day", 
-                "projects": {
-                    "tenant12": {
-                        "instances_count": 1, 
-                        "name": "tenant12", 
-                        "url": "http://localhost:80/projects/tenant12", 
-                        "instances": {
-                            "54": {
-                                "usage": {
-                                    "memory_mb": 66, 
-                                    "vcpus": 39, 
-                                    "local_gb": 73
-                                }, 
-                                "created_at": "2011-01-01T00:00:00Z", 
-                                "destroyed_at": "2011-01-02T00:00:00Z", 
-                                "running": 111, 
-                                "id": 54
-                            }
-                        }, 
-                        "running": 111, 
-                        "usage": {
-                            "memory_mb": 66, 
-                            "vcpus": 39, 
-                            "local_gb": 73
-                        }
-                    }, 
-                    "systenant": {
-                        "instances_count": 1, 
-                        "name": "systenant", 
-                        "url": "http://localhost:80/projects/systenant", 
-                        "instances": {
-                            "12": {
-                                "usage": {
-                                    "memory_mb": 45, 
-                                    "vcpus": 39, 
-                                    "local_gb": 12
-                                }, 
-                                "created_at": "2011-01-01T00:00:00Z", 
-                                "destroyed_at": "2011-01-02T00:00:00Z", 
-                                "running": 1, 
-                                "id": 12
-                            }
-                        }, 
-                        "running": 1, 
-                        "usage": {
-                            "memory_mb": 45, 
-                            "vcpus": 39, 
-                            "local_gb": 12
-                        }
-                    }
-                }
-            },
-            "/projects/tenant12/2011": {
-                "date": "2011-01-01T00:00:00Z", 
-                "duration": "year", 
-                "projects": {
-                    "tenant12": {
-                        "url": "http://localhost:80/projects/tenant12", 
-                        "usage": {
-                            "memory_mb": 165, 
-                            "vcpus": 42, 
-                            "local_gb": 130
-                        }, 
-                        "running": 624, 
-                        "instances_count": 2, 
+                            "memory_mb": 165.0,
+                            "vcpus": 42.0,
+                            "local_gb": 130.0
+                        },
+                        "running": 624.0,
+                        "instances_count": 2,
                         "name": "tenant12"
+                    },
+                    "systenant": {
+                        "url": "http://localhost:80/projects/systenant",
+                        "usage": {
+                            "memory_mb": 55.0,
+                            "vcpus": 80.0,
+                            "local_gb": 79.0
+                        },
+                        "running": 14.0,
+                        "instances_count": 2,
+                        "name": "systenant"
                     }
-                }
+                },
+                "period_end": "2011-02-01T00:00:00Z"
+            },
+            "/projects-all/2011": {
+                "period_start": "2011-01-01T00:00:00Z",
+                "projects": {
+                    "tenant12": {
+                        "url": "http://localhost:80/projects/tenant12",
+                        "usage": {
+                            "memory_mb": 165.0,
+                            "vcpus": 42.0,
+                            "local_gb": 130.0
+                        },
+                        "running": 624.0,
+                        "instances_count": 2,
+                        "name": "tenant12"
+                    },
+                    "systenant": {
+                        "url": "http://localhost:80/projects/systenant",
+                        "usage": {
+                            "memory_mb": 55.0,
+                            "vcpus": 80.0,
+                            "local_gb": 79.0
+                        },
+                        "running": 14.0,
+                        "instances_count": 2,
+                        "name": "systenant"
+                    }
+                },
+                "period_end": "2012-01-01T00:00:00Z"
+            },
+            "/projects-all/2012": {
+                "period_start": "2012-01-01T00:00:00Z",
+                "projects": {
+                    "tenant12": {
+                        "url": "http://localhost:80/projects/tenant12",
+                        "usage": {
+                            "memory_mb": 0.0,
+                            "vcpus": 0.0,
+                            "local_gb": 0.0
+                        },
+                        "running": 0,
+                        "instances_count": 0,
+                        "name": "tenant12"
+                    },
+                    "systenant": {
+                        "url": "http://localhost:80/projects/systenant",
+                        "usage": {
+                            "memory_mb": 0.0,
+                            "vcpus": 0.0,
+                            "local_gb": 0.0
+                        },
+                        "running": 0,
+                        "instances_count": 0,
+                        "name": "systenant"
+                    }
+                },
+                "period_end": "2013-01-01T00:00:00Z"
             },
             "/projects/tenant12/2011/1": {
-                "date": "2011-01-01T00:00:00Z", 
-                "duration": "month", 
-                "projects": {
-                    "tenant12": {
-                        "instances_count": 2, 
-                        "name": "tenant12", 
-                        "url": "http://localhost:80/projects/tenant12", 
-                        "instances": {
-                            "54": {
-                                "usage": {
-                                    "memory_mb": 66, 
-                                    "vcpus": 39, 
-                                    "local_gb": 73
-                                }, 
-                                "created_at": "2011-01-01T00:00:00Z", 
-                                "destroyed_at": "2011-01-02T00:00:00Z", 
-                                "running": 111, 
-                                "id": 54
-                            }, 
-                            "67": {
-                                "usage": {
-                                    "memory_mb": 99, 
-                                    "vcpus": 3, 
-                                    "local_gb": 57
-                                }, 
-                                "created_at": "2011-02-01T00:00:00Z", 
-                                "destroyed_at": "2011-02-03T00:00:00Z", 
-                                "running": 513, 
-                                "id": 67
-                            }
-                        }, 
-                        "running": 624, 
-                        "usage": {
-                            "memory_mb": 165, 
-                            "vcpus": 42, 
-                            "local_gb": 130
+                "project": {
+                    "instances_count": 2,
+                    "name": "tenant12",
+                    "url": "http://localhost:80/projects/tenant12",
+                    "instances": [
+                        {
+                            "instance_id": 67,
+                            "usage": {
+                                "memory_mb": 356400,
+                                "vcpus": 10800,
+                                "local_gb": 205200
+                            },
+                            "running": 1846800,
+                            "created_at": "2011-02-01T00:00:00Z",
+                            "destroyed_at": "2011-02-03T00:00:00Z"
+                        },
+                        {
+                            "instance_id": 54,
+                            "usage": {
+                                "memory_mb": 237600,
+                                "vcpus": 140400,
+                                "local_gb": 262800
+                            },
+                            "running": 399600,
+                            "created_at": "2011-01-01T00:00:00Z",
+                            "destroyed_at": "2011-01-02T00:00:00Z"
                         }
+                    ],
+                    "running": 624.0,
+                    "usage": {
+                        "memory_mb": 165.0,
+                        "vcpus": 42.0,
+                        "local_gb": 130.0
                     }
-                }
+                },
+                "period_start": "2011-01-01T00:00:00Z",
+                "period_end": "2011-02-01T00:00:00Z"
             },
             "/projects/tenant12/2011/1/1": {
-                "date": "2011-01-01T00:00:00Z", 
-                "duration": "day", 
-                "projects": {
-                    "tenant12": {
-                        "instances_count": 1, 
-                        "name": "tenant12", 
-                        "url": "http://localhost:80/projects/tenant12", 
-                        "instances": {
-                            "54": {
-                                "usage": {
-                                    "memory_mb": 66, 
-                                    "vcpus": 39, 
-                                    "local_gb": 73
-                                }, 
-                                "created_at": "2011-01-01T00:00:00Z", 
-                                "destroyed_at": "2011-01-02T00:00:00Z", 
-                                "running": 111, 
-                                "id": 54
-                            }
-                        }, 
-                        "running": 111, 
-                        "usage": {
-                            "memory_mb": 66, 
-                            "vcpus": 39, 
-                            "local_gb": 73
+                "project": {
+                    "instances_count": 1,
+                    "name": "tenant12",
+                    "url": "http://localhost:80/projects/tenant12",
+                    "instances": [
+                        {
+                            "instance_id": 54,
+                            "usage": {
+                                "memory_mb": 237600,
+                                "vcpus": 140400,
+                                "local_gb": 262800
+                            },
+                            "running": 399600,
+                            "created_at": "2011-01-01T00:00:00Z",
+                            "destroyed_at": "2011-01-02T00:00:00Z"
                         }
+                    ],
+                    "running": 111.0,
+                    "usage": {
+                        "memory_mb": 66.0,
+                        "vcpus": 39.0,
+                        "local_gb": 73.0
                     }
-                }
+                },
+                "period_start": "2011-01-01T00:00:00Z",
+                "period_end": "2011-01-02T00:00:00Z"
+            },
+            "/projects/tenant12/2011": {
+                "project": {
+                    "url": "http://localhost:80/projects/tenant12",
+                    "usage": {
+                        "memory_mb": 165.0,
+                        "vcpus": 42.0,
+                        "local_gb": 130.0
+                    },
+                    "running": 624.0,
+                    "instances_count": 2,
+                    "name": "tenant12"
+                },
+                "period_start": "2011-01-01T00:00:00Z",
+                "period_end": "2012-01-01T00:00:00Z"
             },
         }
         fake_db_api = FakeDbApi()
