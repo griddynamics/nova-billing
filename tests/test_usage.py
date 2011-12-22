@@ -20,12 +20,18 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
+import sys
 import datetime
 import unittest
 
 from nova_billing import usage
 
-class UsageTest(unittest.TestCase):
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import tests
+
+
+class UsageTest(tests.TestCase):
     def test_total_seconds(self):
         begin_at = datetime.datetime(2011, 1, 12, 0, 0)
         end_at = datetime.datetime(2011, 1, 12, 0, 1)

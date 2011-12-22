@@ -20,7 +20,8 @@
 Tests for nova_billing.rest
 """
 
-
+import os
+import sys
 import json
 import datetime
 import unittest
@@ -31,6 +32,9 @@ import webob
 
 from nova_billing import rest
 from nova_billing.db import api as db_api
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import tests
 
 
 class FakeDbApi(object):
@@ -84,72 +88,75 @@ class FakeDbApi(object):
         return total_statistics
 
 
-class TestCase(unittest.TestCase):
-    def setUp(self):
-        """Run before each test method to initialize test environment."""
-        super(TestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
-
+class TestCase(tests.TestCase):
     def test_billing_application(self):
         """
         Test different billing REST API queries.
         """
         rest_calls = {
-            "/projects-all/2011/1/1": {
-                "period_start": "2011-01-01T00:00:00Z",
-                "projects": {
-                    "tenant12": {
-                        "url": "http://localhost:80/projects/tenant12",
-                        "usage": {
-                            "memory_mb": 66.0,
-                            "vcpus": 39.0,
-                            "local_gb": 73.0
-                        },
-                        "running": 111.0,
-                        "instances_count": 1,
-                        "name": "tenant12"
-                    },
-                    "systenant": {
-                        "url": "http://localhost:80/projects/systenant",
-                        "usage": {
-                            "memory_mb": 45.0,
-                            "vcpus": 39.0,
-                            "local_gb": 12.0
-                        },
-                        "running": 1.0,
-                        "instances_count": 1,
-                        "name": "systenant"
-                    }
-                },
-                "period_end": "2011-01-02T00:00:00Z"
+            "/": {
+                "application": "nova-billing",
+                "version": "0.0.2",
+                "urls": {
+                    "projects-all": "http://localhost:80/projects-all",
+                    "projects": "http://localhost:80/projects"
+                }
             },
-            "/projects-all/2011/01": {
-                "period_start": "2011-01-01T00:00:00Z",
+            "/projects": {
+                "period_start": "2011-12-01T00:00:00Z",
                 "projects": {
                     "tenant12": {
                         "url": "http://localhost:80/projects/tenant12",
                         "usage": {
-                            "memory_mb": 165.0,
-                            "vcpus": 42.0,
-                            "local_gb": 130.0
+                            "local_gb_h": 0.0,
+                            "vcpus_h": 0.0,
+                            "memory_mb_h": 0.0
                         },
-                        "running": 624.0,
-                        "instances_count": 2,
+                        "instances_count": 0,
+                        "running_sec": 0,
                         "name": "tenant12"
                     },
                     "systenant": {
                         "url": "http://localhost:80/projects/systenant",
                         "usage": {
-                            "memory_mb": 55.0,
-                            "vcpus": 80.0,
-                            "local_gb": 79.0
+                            "local_gb_h": 0.0,
+                            "vcpus_h": 0.0,
+                            "memory_mb_h": 0.0
                         },
-                        "running": 14.0,
-                        "instances_count": 2,
+                        "instances_count": 0,
+                        "running_sec": 0,
                         "name": "systenant"
                     }
                 },
-                "period_end": "2011-02-01T00:00:00Z"
+                "period_end": "2012-01-01T00:00:00Z"
+            },
+            "/projects-all": {
+                "period_start": "2011-12-01T00:00:00Z",
+                "projects": {
+                    "tenant12": {
+                        "url": "http://localhost:80/projects/tenant12",
+                        "usage": {
+                            "local_gb_h": 0.0,
+                            "vcpus_h": 0.0,
+                            "memory_mb_h": 0.0
+                        },
+                        "instances_count": 0,
+                        "running_sec": 0,
+                        "name": "tenant12"
+                    },
+                    "systenant": {
+                        "url": "http://localhost:80/projects/systenant",
+                        "usage": {
+                            "local_gb_h": 0.0,
+                            "vcpus_h": 0.0,
+                            "memory_mb_h": 0.0
+                        },
+                        "instances_count": 0,
+                        "running_sec": 0,
+                        "name": "systenant"
+                    }
+                },
+                "period_end": "2012-01-01T00:00:00Z"
             },
             "/projects-all/2011": {
                 "period_start": "2011-01-01T00:00:00Z",
@@ -157,27 +164,83 @@ class TestCase(unittest.TestCase):
                     "tenant12": {
                         "url": "http://localhost:80/projects/tenant12",
                         "usage": {
-                            "memory_mb": 165.0,
-                            "vcpus": 42.0,
-                            "local_gb": 130.0
+                            "local_gb_h": 130.0,
+                            "vcpus_h": 42.0,
+                            "memory_mb_h": 165.0
                         },
-                        "running": 624.0,
                         "instances_count": 2,
+                        "running_sec": 2246400,
                         "name": "tenant12"
                     },
                     "systenant": {
                         "url": "http://localhost:80/projects/systenant",
                         "usage": {
-                            "memory_mb": 55.0,
-                            "vcpus": 80.0,
-                            "local_gb": 79.0
+                            "local_gb_h": 79.0,
+                            "vcpus_h": 80.0,
+                            "memory_mb_h": 55.0
                         },
-                        "running": 14.0,
                         "instances_count": 2,
+                        "running_sec": 50400,
                         "name": "systenant"
                     }
                 },
                 "period_end": "2012-01-01T00:00:00Z"
+            },
+            "/projects-all/2011/01": {
+                "period_start": "2011-01-01T00:00:00Z",
+                "projects": {
+                    "tenant12": {
+                        "url": "http://localhost:80/projects/tenant12",
+                        "usage": {
+                            "local_gb_h": 130.0,
+                            "vcpus_h": 42.0,
+                            "memory_mb_h": 165.0
+                        },
+                        "instances_count": 2,
+                        "running_sec": 2246400,
+                        "name": "tenant12"
+                    },
+                    "systenant": {
+                        "url": "http://localhost:80/projects/systenant",
+                        "usage": {
+                            "local_gb_h": 79.0,
+                            "vcpus_h": 80.0,
+                            "memory_mb_h": 55.0
+                        },
+                        "instances_count": 2,
+                        "running_sec": 50400,
+                        "name": "systenant"
+                    }
+                },
+                "period_end": "2011-02-01T00:00:00Z"
+            },
+            "/projects-all/2011/1/1": {
+                "period_start": "2011-01-01T00:00:00Z",
+                "projects": {
+                    "tenant12": {
+                        "url": "http://localhost:80/projects/tenant12",
+                        "usage": {
+                            "local_gb_h": 73.0,
+                            "vcpus_h": 39.0,
+                            "memory_mb_h": 66.0
+                        },
+                        "instances_count": 1,
+                        "running_sec": 399600,
+                        "name": "tenant12"
+                    },
+                    "systenant": {
+                        "url": "http://localhost:80/projects/systenant",
+                        "usage": {
+                            "local_gb_h": 12.0,
+                            "vcpus_h": 39.0,
+                            "memory_mb_h": 45.0
+                        },
+                        "instances_count": 1,
+                        "running_sec": 3600,
+                        "name": "systenant"
+                    }
+                },
+                "period_end": "2011-01-02T00:00:00Z"
             },
             "/projects-all/2012": {
                 "period_start": "2012-01-01T00:00:00Z",
@@ -185,27 +248,58 @@ class TestCase(unittest.TestCase):
                     "tenant12": {
                         "url": "http://localhost:80/projects/tenant12",
                         "usage": {
-                            "memory_mb": 0.0,
-                            "vcpus": 0.0,
-                            "local_gb": 0.0
+                            "local_gb_h": 0.0,
+                            "vcpus_h": 0.0,
+                            "memory_mb_h": 0.0
                         },
-                        "running": 0,
                         "instances_count": 0,
+                        "running_sec": 0,
                         "name": "tenant12"
                     },
                     "systenant": {
                         "url": "http://localhost:80/projects/systenant",
                         "usage": {
-                            "memory_mb": 0.0,
-                            "vcpus": 0.0,
-                            "local_gb": 0.0
+                            "local_gb_h": 0.0,
+                            "vcpus_h": 0.0,
+                            "memory_mb_h": 0.0
                         },
-                        "running": 0,
                         "instances_count": 0,
+                        "running_sec": 0,
                         "name": "systenant"
                     }
                 },
                 "period_end": "2013-01-01T00:00:00Z"
+            },
+            "/projects/systenant": {
+                "project": {
+                    "instances_count": 0,
+                    "name": "systenant",
+                    "url": "http://localhost:80/projects/systenant",
+                    "instances": [],
+                    "usage": {
+                        "local_gb_h": 0.0,
+                        "vcpus_h": 0.0,
+                        "memory_mb_h": 0.0
+                    },
+                    "running_sec": 0
+                },
+                "period_start": "2011-12-01T00:00:00Z",
+                "period_end": "2012-01-01T00:00:00Z"
+            },
+            "/projects/tenant12/2011": {
+                "project": {
+                    "url": "http://localhost:80/projects/tenant12",
+                    "usage": {
+                        "local_gb_h": 130.0,
+                        "vcpus_h": 42.0,
+                        "memory_mb_h": 165.0
+                    },
+                    "instances_count": 2,
+                    "running_sec": 2246400,
+                    "name": "tenant12"
+                },
+                "period_start": "2011-01-01T00:00:00Z",
+                "period_end": "2012-01-01T00:00:00Z"
             },
             "/projects/tenant12/2011/1": {
                 "project": {
@@ -216,32 +310,32 @@ class TestCase(unittest.TestCase):
                         {
                             "instance_id": 67,
                             "usage": {
-                                "memory_mb": 356400,
-                                "vcpus": 10800,
-                                "local_gb": 205200
+                                "local_gb_h": 57.0,
+                                "vcpus_h": 3.0,
+                                "memory_mb_h": 99.0
                             },
-                            "running": 1846800,
                             "created_at": "2011-02-01T00:00:00Z",
+                            "running_sec": 1846800,
                             "destroyed_at": "2011-02-03T00:00:00Z"
                         },
                         {
                             "instance_id": 54,
                             "usage": {
-                                "memory_mb": 237600,
-                                "vcpus": 140400,
-                                "local_gb": 262800
+                                "local_gb_h": 73.0,
+                                "vcpus_h": 39.0,
+                                "memory_mb_h": 66.0
                             },
-                            "running": 399600,
                             "created_at": "2011-01-01T00:00:00Z",
+                            "running_sec": 399600,
                             "destroyed_at": "2011-01-02T00:00:00Z"
                         }
                     ],
-                    "running": 624.0,
                     "usage": {
-                        "memory_mb": 165.0,
-                        "vcpus": 42.0,
-                        "local_gb": 130.0
-                    }
+                        "local_gb_h": 130.0,
+                        "vcpus_h": 42.0,
+                        "memory_mb_h": 165.0
+                    },
+                    "running_sec": 2246400
                 },
                 "period_start": "2011-01-01T00:00:00Z",
                 "period_end": "2011-02-01T00:00:00Z"
@@ -255,45 +349,30 @@ class TestCase(unittest.TestCase):
                         {
                             "instance_id": 54,
                             "usage": {
-                                "memory_mb": 237600,
-                                "vcpus": 140400,
-                                "local_gb": 262800
+                                "local_gb_h": 73.0,
+                                "vcpus_h": 39.0,
+                                "memory_mb_h": 66.0
                             },
-                            "running": 399600,
                             "created_at": "2011-01-01T00:00:00Z",
+                            "running_sec": 399600,
                             "destroyed_at": "2011-01-02T00:00:00Z"
                         }
                     ],
-                    "running": 111.0,
                     "usage": {
-                        "memory_mb": 66.0,
-                        "vcpus": 39.0,
-                        "local_gb": 73.0
-                    }
+                        "local_gb_h": 73.0,
+                        "vcpus_h": 39.0,
+                        "memory_mb_h": 66.0
+                    },
+                    "running_sec": 399600
                 },
                 "period_start": "2011-01-01T00:00:00Z",
                 "period_end": "2011-01-02T00:00:00Z"
-            },
-            "/projects/tenant12/2011": {
-                "project": {
-                    "url": "http://localhost:80/projects/tenant12",
-                    "usage": {
-                        "memory_mb": 165.0,
-                        "vcpus": 42.0,
-                        "local_gb": 130.0
-                    },
-                    "running": 624.0,
-                    "instances_count": 2,
-                    "name": "tenant12"
-                },
-                "period_start": "2011-01-01T00:00:00Z",
-                "period_end": "2012-01-01T00:00:00Z"
             },
         }
         fake_db_api = FakeDbApi()
         for func_name in ("instances_on_interval", ):
             self.stubs.Set(db_api, func_name, getattr(fake_db_api, func_name))
+        self.stubs.Set(rest, "get_current_datetime", lambda: datetime.datetime(2011, 12, 1))
         for query in rest_calls:
             result = webob.Request.blank(query).get_response(rest.BillingApplication())
             self.assertEqual(json.loads(result.body), rest_calls[query])
-        self.stubs.UnsetAll()

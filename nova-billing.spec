@@ -5,7 +5,7 @@
 %define mod_name nova_billing
 
 Name:             nova-billing
-Version:          0.0.1
+Version:          0.0.2
 Release:          1
 Summary:          A nova billing server
 License:          GNU GPL v3
@@ -15,7 +15,7 @@ Group:            Development/Languages/Python
 
 Source0:          %{name}-%{version}.tar.gz
 BuildRoot:        %{_tmppath}/%{name}-%{version}-build
-BuildRequires:    python-devel python-setuptools make
+BuildRequires:    python-devel python-setuptools make 
 BuildArch:        noarch
 Requires:         openstack-nova
 Requires:         start-stop-daemon
@@ -33,6 +33,7 @@ This package contains the nova billing server.
 Summary:        Documentation for %{name}
 Group:          Documentation
 Requires:       %{name} = %{version}-%{release}
+BuildRequires:  python-sphinx
 
 %description doc
 Documentation and examples for %{name}.
