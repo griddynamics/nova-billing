@@ -32,6 +32,7 @@ from nova.api.openstack import wsgi as os_wsgi
 
 from nova_billing.db import api as db_api
 from nova_billing.usage import dict_add
+from nova_billing.version import version_string
 
 
 FLAGS = flags.FLAGS
@@ -48,6 +49,13 @@ def datetime_to_str(dt):
     return ("%sZ" % dt.isoformat()) if dt else None
 
 
+def get_current_datetime():
+    """
+    Returns ``datetime.datetime.now()``. Used for patching in unit test.
+    """
+    return datetime.datetime.now()
+
+
 class BillingController(object):
     """
     WSGI application that reads routing information supplied by ``RoutesMiddleware``
@@ -60,18 +68,44 @@ class BillingController(object):
         Determine period start and stop, ask db api, and return JSON report.
         """
         arg_dict = req.environ['wsgiorg.routing_args'][1]
-        year = int(arg_dict["year"])
-        duration = "year"
-        try:
-            month = int(arg_dict["month"])
-            duration = "month"
-        except KeyError:
-            month = 1
-        try:
-            day = int(arg_dict["day"])
-            duration = "day"
-        except KeyError:
+
+        if arg_dict.get("action", None) == "index":
+            ans_dict = {
+                "version": version_string(),
+                "application": "nova-billing",
+                "urls": {
+                    "projects":
+                        "http://%s:%s/projects" %
+                        (req.environ["SERVER_NAME"],
+                         req.environ["SERVER_PORT"]),
+                    "projects-all":
+                        "http://%s:%s/projects-all" %
+                        (req.environ["SERVER_NAME"],
+                         req.environ["SERVER_PORT"]),
+                }
+            }
+            return webob.Response(json.dumps(ans_dict),
+                         content_type='application/json')
+
+        if not arg_dict.has_key("year"):
+            now = get_current_datetime()
+            year = now.year
+            month = now.month
             day = 1
+            duration= "month"
+        else:
+            year = int(arg_dict["year"])
+            duration = "year"
+            try:
+                month = int(arg_dict["month"])
+                duration = "month"
+            except KeyError:
+                month = 1
+            try:
+                day = int(arg_dict["day"])
+                duration = "day"
+            except KeyError:
+                day = 1
 
         period_start = datetime.datetime(year=year, month=month, day=day)
         if duration.startswith("d"):
@@ -94,6 +128,9 @@ class BillingController(object):
         if queried_project and not total_statistics.has_key(queried_project):
             total_statistics[queried_project] = {}
 
+        def usage_to_hours(usage):
+            return dict([(key + "_h", usage[key] / 3600.0) for key in usage])
+
         for project_id, project_statistics in total_statistics.items():
             project_dict = {
                 "name": project_id,
@@ -102,26 +139,24 @@ class BillingController(object):
                         req.environ["SERVER_PORT"],
                         project_id),
                 "instances_count": len(project_statistics),
-                "running": 0,
-                "usage": {"local_gb": 0, "memory_mb": 0, "vcpus": 0}
+                "running_sec": 0,
             }
+            project_usage = {"local_gb": 0, "memory_mb": 0, "vcpus": 0}
             instances = []
             for instance_id, instance_statistics in project_statistics.items():
-                project_dict["running"] += instance_statistics["running"]
-                dict_add(project_dict["usage"], instance_statistics["usage"])
+                project_dict["running_sec"] += instance_statistics["running"]
+                dict_add(project_usage, instance_statistics["usage"])
                 if show_instances:
-                    instance_dict = {"instance_id": instance_id}
-                    for key in "running", "usage":
-                        instance_dict[key] = instance_statistics[key]
+                    instance_dict = {"instance_id": instance_id,
+                                     "running_sec": instance_statistics["running"]}
+                    instance_dict["usage"] = usage_to_hours(instance_statistics["usage"])
                     for key in "created_at", "destroyed_at":
                         instance_dict[key] = datetime_to_str(instance_statistics[key])
                     instances.append(instance_dict)
 
             if show_instances:
                 project_dict["instances"] = instances
-            for key in project_dict["usage"]:
-                project_dict["usage"][key] /= 3600.
-            project_dict["running"] /= 3600.
+            project_dict["usage"] = usage_to_hours(project_usage)
             projects[project_id] = project_dict
         ans_dict = {
             "period_start": datetime_to_str(period_start),
@@ -152,6 +187,10 @@ class BillingApplication(base_wsgi.Router):
         mapper.connect(None, "/projects/{project}/{year}",
                         controller=BillingController(),
                         requirements=requirements)
+        mapper.connect(None, "/projects/{project}",
+                        controller=BillingController())
+        mapper.connect(None, "/projects",
+                        controller=BillingController())
         mapper.connect(None, "/projects-all/{year}/{month}/{day}",
                         controller=BillingController(),
                         requirements=requirements)
@@ -161,6 +200,11 @@ class BillingApplication(base_wsgi.Router):
         mapper.connect(None, "/projects-all/{year}",
                         controller=BillingController(),
                         requirements=requirements)
+        mapper.connect(None, "/projects-all",
+                        controller=BillingController())
+        mapper.connect(None, "/",
+                        controller=BillingController(),
+                        action="index")
         super(BillingApplication, self).__init__(mapper)
 
 

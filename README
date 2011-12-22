@@ -18,8 +18,8 @@ The server saves logs to ``/var/log/nova/nova-billing.log``.
 RPM Building
 ===========================
 
-Clone nova-billing git repository, rename the top dir to nova-billing-0.0.1,
-and tar it to nova-billing-0.0.1.tar.gz. Place it to rpmbuild/SOURCES
+Clone nova-billing git repository, rename the top dir to nova-billing-0.0.2,
+and tar it to nova-billing-0.0.2.tar.gz. Place it to rpmbuild/SOURCES
 directory and run::
 
     $ rpmbuild -ba nova-billing.spec
@@ -46,19 +46,17 @@ Try to run or terminate an instance and check that the daemon returns reports::
 Its output should look like this::
 
     {
-        "date": "2011-01-01T00:00:00Z", 
-        "duration": "year", 
-        "projects": {
-            "systenant": {
-                "instances_count": 2, 
-                "name": "systenant", 
-                "usage": {
-                    "local_gb": 12,
-                    "memory_mb": 45,
-                    "vcpus": 39
-                },
-                "running": 257115, 
-                "url": "http://127.0.0.1:8787/projects/systenant"
+        "period_end": "2012-01-01T00:00:00Z", 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "project": {
+            "instances_count": 1, 
+            "name": "systenant", 
+            "running_sec": 13.0, 
+            "url": "http://127.0.0.1:8787/projects/systenant", 
+            "usage": {
+                "local_gb_h": 13.0, 
+                "memory_mb_h": 26.0, 
+                "vcpus_h": 13.0
             }
         }
     }

@@ -5,7 +5,7 @@
 %define mod_name nova_billing
 
 Name:             nova-billing
-Version:          0.0.1
+Version:          0.0.2
 Release:          1
 Summary:          A nova billing server
 License:          GNU GPL v3

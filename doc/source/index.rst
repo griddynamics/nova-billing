@@ -13,7 +13,7 @@ Contents:
 
 
 Developer Docs
-==============
+--------------
 
 .. toctree::
    :maxdepth: 1
@@ -22,7 +22,7 @@ Developer Docs
 
 
 User Docs
-=========
+---------
 .. toctree::
    :maxdepth: 1
 
@@ -31,7 +31,7 @@ User Docs
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -21,6 +21,8 @@ Tests for nova_billing.amqp
 """
 
 
+import os
+import sys
 import json
 import datetime
 import unittest
@@ -32,6 +34,9 @@ import webob
 from nova_billing import amqp
 from nova_billing.db import api as db_api
 from nova_billing.db.sqlalchemy import models
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import tests
 
 
 class FakeDbApi(object):
@@ -63,12 +68,7 @@ class FakeDbApi(object):
                 segment["end_at"] = end_at
 
 
-class TestCase(unittest.TestCase):
-    def setUp(self):
-        """Run before each test method to initialize test environment."""
-        super(TestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
-
+class TestCase(tests.TestCase):
     run_instance_body = {
         "_context_roles": [
             "projectmanager"

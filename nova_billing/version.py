@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Nova Billing
@@ -17,26 +16,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Nova Billing version.
+"""
 
-import gettext
-import glob
-import os
-import subprocess
-import sys
-
-from setuptools import setup, find_packages
-
-
-setup(name='nova-billing',
-      version='0.0.2',
-      license='GNU GPL v3',
-      description='cloud computing fabric controller',
-      author='Alessio Ababilov, Ivan Kolodyazhny (GridDynamics Openstack Core Team, (c) GridDynamics)',
-      author_email='openstack@griddynamics.com',
-      url='http://www.griddynamics.com/openstack',
-      packages=find_packages(exclude=['bin', 'smoketests', 'tests']),
-      scripts=['bin/nova-billing'],
-      py_modules=[],
-      test_suite='tests'
-)
+def version_string():
+    return "0.0.2"
 

@@ -22,6 +22,7 @@ Tests for nova_billing.db.sqlalchemy.api
 
 import datetime
 import os
+import sys
 
 import unittest
 import stubout
@@ -33,8 +34,11 @@ from nova import flags
 from nova_billing import amqp
 from nova_billing.db.sqlalchemy import api as db_api
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import tests
 
-class TestCase(unittest.TestCase):
+
+class TestCase(tests.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestCase, self).__init__(*args, **kwargs)
         self.sqlite_file = "/tmp/nova_billing.sqlite"
@@ -43,7 +47,6 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         """Run before each test method to initialize test environment."""
         super(TestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
         self.clear_db()
 
     instance_id = 1600
