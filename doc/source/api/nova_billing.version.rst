@@ -1,4 +1,4 @@
-The :mod:`nova_billing.version` Module
+The nova_billing.version Module
 ==============================================================================
 .. automodule:: nova_billing.version
   :members:

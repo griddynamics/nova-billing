@@ -1,4 +1,4 @@
-The :mod:`nova_billing.amqp` Module
+The nova_billing.amqp Module
 ==============================================================================
 .. automodule:: nova_billing.amqp
   :members:

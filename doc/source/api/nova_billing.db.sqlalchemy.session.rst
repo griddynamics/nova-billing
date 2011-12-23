@@ -1,4 +1,4 @@
-The :mod:`nova_billing.db.sqlalchemy.session` Module
+The nova_billing.db.sqlalchemy.session Module
 ==============================================================================
 .. automodule:: nova_billing.db.sqlalchemy.session
   :members:

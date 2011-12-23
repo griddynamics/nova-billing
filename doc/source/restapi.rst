@@ -1,32 +1,260 @@
-Nova Billing REST API
+REST API
 ===============================
 
-Nova billing daemon supports two forms of requests.
+Request format
+--------------
 
-#. ``/projects/{project}/{time period}``.
-#. ``/projects-all/{time period}``.
+Nova Billing daemon supports the following forms of requests.
 
-The first form retrieves statistics for the given project.
-The second form retrieves data for all projects.
+1. ``GET /`` - report on available URLs and application name and version.
 
-Each form has three variants.
+2. ``GET /projects`` and ``GET /projects-all`` - statistics for all
+   projects on current month.
 
-#. Report for a year: ``/projects/{project}/{year}`` and ``/projects-all/{year}``.
-#. Report for a month: ``/projects/{project}/{year}/{month}`` and ``/projects-all/{year}/{month}``.
-#. Report for a day: ``/projects/{project}/{year}/{month}/{day}`` and ``/projects-all/{year}/{month}/{day}``.
+3. ``GET /projects/{project}`` - statistics for requested
+   ``{project}`` on current month.
 
-``month`` is an integer between 1 (January) and 12 (December).
+4. ``GET /projects-all/{time_period}`` - statistics for all
+   projects on requested ``{time_period}`` (see below).
 
-``day`` is an integer between 1 and the number of days in the given month and year.
+5. ``GET /projects/{project}/{time_period}`` - statistics for requested
+   ``{project}`` on requested ``{time_period}`` (see below).
 
-If user asks for month or day statistics for a particular project, statistics per instance will also be reported.
+``{project}`` is a name of a project. It is not a project ID.
 
-Note. Date and time is UTC only in order to avoid problems with timezones and daylight saving time.
-So, it is stored, retrieved, and specified in queries as UTC.
+``{time_period}`` has three forms.
 
-Examples::
+#. A year: ``GET /projects/{project}/{year}`` and ``GET /projects-all/{year}``.
+#. A month: ``GET /projects/{project}/{year}/{month}`` and ``GET /projects-all/{year}/{month}``.
+#. A day: ``GET /projects/{project}/{year}/{month}/{day}`` and ``GET /projects-all/{year}/{month}/{day}``.
 
-    $ curl http://localhost:8787/projects/systenant/2011 | python -mjson.tool
+``{time_period}`` components must follow the following rules.
+
+1. ``{year}`` is an integer. It must contain exactly four decimal digits.
+
+2. ``{month}`` is an integer between 1 (January) and 12 (December).
+
+3. ``{day}`` is an integer between 1 and the number of days in the given
+   month and year.
+
+4. Both ``{month}`` and ``{day}`` must contain exactly 1 or 2 decimal digits,
+   and the leading zero can be omitted.
+
+Date and time always is UTC in order to avoid problems with timezones and daylight saving time.
+So, ``{time_period}`` must be in UTC, and current month is also UTC.
+
+
+Report format
+-------------
+
+All reports of Nova Billing daemon are in JSON. We use JSON schema (http://json-schema.org/) for format description.
+
+For ``GET /`` request, report has the following schema:
+
+.. code-block:: javascript
+
+    {
+        "type": "object", 
+        "description": "Basic application information", 
+        "properties": {
+            "application": {
+                "required": true, 
+                "type": "string", 
+                "description": "Application name"
+            }, 
+            "version": {
+                "required": true, 
+                "type": "string", 
+                "description": "Application version"
+            }, 
+            "urls": {
+                "type": "object", 
+                "description": "Available URLs", 
+                "properties": {
+                    "projects-all": {
+                        "required": true, 
+                        "type": "string", 
+                        "description": "projects-all URL"
+                    }, 
+                    "projects": {
+                        "required": true, 
+                        "type": "string", 
+                        "description": "projects URL"
+                    }
+                }
+            }
+        }
+    }
+
+For request on statistics, report has the following schema:
+
+.. code-block:: javascript
+
+    {
+        "type": "object", 
+        "description": "Resource usage report", 
+        "properties": {
+            "period_start": {
+                "required": true, 
+                "type": "string", 
+                "description": "The beginning of the requested period", 
+                "format": "date-time"
+            }, 
+            "period_end": {
+                "required": true, 
+                "type": "string", 
+                "description": "The end of the requested period", 
+                "format": "date-time"
+            },
+            "projects": {
+                "items": {
+                    "type": "object", 
+                    "description": "Project statistics"
+                }, 
+                "required": false, 
+                "type": "array", 
+                "description": "Statistics for all projects"
+            }, 
+            "project": {
+                "required": false, 
+                "type": "object", 
+                "description": "Project statistics"
+            }
+        }
+    }
+
+``project`` key is available if a particular project is requested (i.e.,
+``GET /projects/{project}/{time_period}`` or ``GET /projects/{project}``).
+Otherwise, ``projects`` key is available (``GET /projects``, 
+``GET /projects-all``, and ``GET /projects-all/{time_period}`` requests).
+
+Project statistics object has the following schema:
+
+.. code-block:: javascript
+
+    {
+        "type": "object", 
+        "description": "Project statistics", 
+        "properties": {
+            "instances_count": {
+                "type": "integer", 
+                "description": "Number of instances running on requested time period"
+            }, 
+            "name": {
+                "required": true, 
+                "type": "string", 
+                "description": "Project name"
+            }, 
+            "url": {
+                "required": true, 
+                "type": "string", 
+                "description": "Project URL"
+            }, 
+            "instances": {
+                "items": {
+                    "type": "object", 
+                    "description": "Instance statistics"
+                }, 
+                "required": false, 
+                "type": "array", 
+                "description": "Statistics for instances running on requested time period"
+            }, 
+            "usage": {
+                "required": true, 
+                "type": "object", 
+                "description": "Resource usage (sum for all instances)"
+            }, 
+            "running_sec": {
+                "required": true, 
+                "type": "integer", 
+                "description": "Sum of running_sec for all instances"
+            }
+        }
+    }
+
+``instances`` key is available only if time period is month or day and a
+particular project is requested (queries ``GET /projects/{project}``,
+``GET /projects/{project}/{year}/{month}``, and
+``GET /projects/{project}/{year}/{month}/{day}``).
+
+
+Instance statistics object has the following schema:
+
+.. code-block:: javascript
+
+    {
+        "type": "object", 
+        "description": "Instance statistics", 
+        "properties": {
+            "instance_id": {
+                "required": true, 
+                "type": "integer", 
+                "description": "Instance ID"
+            }, 
+            "usage": {
+                "required": true, 
+                "type": "object", 
+                "description": "Resource usage"
+            }, 
+            "created_at": {
+                "required": true, 
+                "type": "string", 
+                "description": "Date of instance creation", 
+                "format": "date-time"
+            }, 
+            "running_sec": {
+                "required": true, 
+                "type": "integer", 
+                "description": "Time in seconds while instance was running on requested time period"
+            }, 
+            "destroyed_at": {
+                "required": true, 
+                "type": [
+                    "string", 
+                    "null"
+                ], 
+                "description": "Date of instance destruction (termination)", 
+                "format": "date-time"
+            }
+        }
+    }
+
+Date of instance destruction is ``null`` if the instance is still running.
+
+Resource usage object has the following schema:
+
+.. code-block:: javascript
+
+    {
+        "type": "object", 
+        "description": "Resource usage", 
+        "properties": {
+            "local_gb_h": {
+                "required": true, 
+                "type": "number", 
+                "description": "Hard drive usage (GB * h)"
+            }, 
+            "vcpus_h": {
+                "required": true, 
+                "type": "number", 
+                "description": "CPU usage (number of CPUs * h)"
+            }, 
+            "memory_mb_h": {
+                "required": true, 
+                "type": "number", 
+                "description": "RAM usage (MB * h)"
+            }
+        }
+    }
+
+Examples
+--------
+
+Statistics for ``systenant`` project on 2011 year:
+
+.. code-block:: javascript
+
+    $ curl "http://localhost:8787/projects/systenant/2011" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-01-01T00:00:00Z", 
@@ -42,7 +270,12 @@ Examples::
             }
         }
     }
-    $ curl http://localhost:8787/projects/systenant/2011/12 | python -mjson.tool
+
+Statistics for ``systenant`` project on December, 2011:
+
+.. code-block:: javascript
+
+    $ curl "http://localhost:8787/projects/systenant/2011/12" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-12-01T00:00:00Z", 
@@ -137,7 +370,12 @@ Examples::
             }
         }
     }
-    $ curl http://localhost:8787/projects-all/2011/12 | python -mjson.tool
+
+Statistics for all projects on December, 2011:
+
+.. code-block:: javascript
+
+    $ curl "http://localhost:8787/projects-all/2011/12" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-12-01T00:00:00Z", 

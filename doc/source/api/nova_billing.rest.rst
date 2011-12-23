@@ -1,4 +1,4 @@
-The :mod:`nova_billing.rest` Module
+The nova_billing.rest Module
 ==============================================================================
 .. automodule:: nova_billing.rest
   :members:

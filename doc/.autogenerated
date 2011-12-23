@@ -6,4 +6,3 @@ source/api/nova_billing.db.sqlalchemy.models.rst
 source/api/nova_billing.vm_states.rst
 source/api/nova_billing.usage.rst
 source/api/nova_billing.amqp.rst
-source/api/autoindex.rst

@@ -1,37 +1,43 @@
 Quickstart
 ===========================
 
-Install the package::
+Install the package:
+
+.. code-block:: shell
 
     # yum install nova-billing
 
-Start the server::
+Start the server:
+
+.. code-block:: shell
 
     # /etc/init.d/nova-billing start
 
 Now instance state changes will be stored to a database.
 
-Try to run or terminate an instance and check that the daemon returns reports::
+Try to run or terminate an instance and check that the daemon returns reports:
+
+.. code-block:: shell
 
     $ curl http://localhost:8787/projects/systenant/2011 | python -mjson.tool
 
 
-Its output should look like this::
+Its output should look like this:
+
+.. code-block:: javascript
 
     {
-        "date": "2011-01-01T00:00:00Z",
-        "duration": "year",
-        "projects": {
-            "systenant": {
-                "instances_count": 2,
-                "name": "systenant",
-                "usage": {
-                    "local_gb": 12,
-                    "memory_mb": 45,
-                    "vcpus": 39
-                },
-                "running": 257115,
-                "url": "http://127.0.0.1:8787/projects/systenant"
+        "period_end": "2012-01-01T00:00:00Z", 
+        "period_start": "2011-12-01T00:00:00Z", 
+        "project": {
+            "instances_count": 1, 
+            "name": "systenant", 
+            "running_sec": 26, 
+            "url": "http://127.0.0.1:8787/projects/systenant", 
+            "usage": {
+                "local_gb_h": 13.0, 
+                "memory_mb_h": 13.0, 
+                "vcpus_h": 7.0
             }
         }
     }

@@ -1,4 +1,4 @@
-The :mod:`nova_billing.usage` Module
+The nova_billing.usage Module
 ==============================================================================
 .. automodule:: nova_billing.usage
   :members:
