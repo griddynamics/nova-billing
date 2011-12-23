@@ -28,6 +28,7 @@ User Docs
 
    quickstart
    restapi
+   config
 
 
 Indices and tables
