@@ -474,7 +474,6 @@ ol {
 }
 li {
   line-height: 18px;
-  color: #808080;
 }
 ul.unstyled {
   list-style: none;
@@ -490,7 +489,8 @@ dl dt {
   font-weight: bold;
 }
 dl dd {
-  margin-left: 9px;
+  margin-bottom: 0.5em;
+  margin-left: 27px;
 }
 hr {
   margin: 20px 0 19px;
@@ -535,13 +535,17 @@ address {
   line-height: 18px;
   margin-bottom: 18px;
 }
-code, pre {
+code, pre, .pre {
   padding: 0 3px 2px;
   font-family: Courier New, monospace;
   font-size: 12px;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   border-radius: 3px;
+}
+.pre {
+  background-color: #f8f8f8;
+  color: rgba(0, 0, 0, 1);
 }
 code {
   background-color: #fee9cc;
