@@ -9,10 +9,11 @@ Nova Billing daemon supports the following forms of requests.
 1. ``GET /`` - report on available URLs and application name and version.
 
 2. ``GET /projects`` and ``GET /projects-all`` - statistics for all
-   projects on current month.
+   projects.  Time period should be specified with ``period_start`` 
+   and ``period_end`` request parameters. If they are omitted, current month is assumed.
 
 3. ``GET /projects/{project}`` - statistics for requested
-   ``{project}`` on current month.
+   ``{project}``. Time period is determined as described in previous item.
 
 4. ``GET /projects-all/{time_period}`` - statistics for all
    projects on requested ``{time_period}`` (see below).
@@ -42,6 +43,19 @@ Nova Billing daemon supports the following forms of requests.
 
 Date and time always is UTC in order to avoid problems with timezones and daylight saving time.
 So, ``{time_period}`` must be in UTC, and current month is also UTC.
+
+An additional request parameter ``include`` is used to specify what statistics should be returned.
+This parameter is one or two comma-separated items from the following list:
+
+* ``instances`` or ``instances-long`` - short or long statistics for instances;
+* ``images`` or ``images-long`` - short or long statistics for images.
+
+Short form contains only summary for project, long statistics has additional information about individual instances or images.
+
+Statistics for both instances and images can be retrieved by giving two comma-separated items, i.e. ``include=instances-long,images``.
+
+If ``include`` parameter is omitted, statistics for instances will be returned.
+It will be in short form for time period greater than 31 day and in long form otherwise.
 
 
 Report format
@@ -136,10 +150,6 @@ Project statistics object has the following schema:
         "type": "object", 
         "description": "Project statistics", 
         "properties": {
-            "instances_count": {
-                "type": "integer", 
-                "description": "Number of instances running on requested time period"
-            }, 
             "name": {
                 "required": true, 
                 "type": "string", 
@@ -151,46 +161,71 @@ Project statistics object has the following schema:
                 "description": "Project URL"
             }, 
             "instances": {
-                "items": {
-                    "type": "object", 
-                    "description": "Instance statistics"
-                }, 
                 "required": false, 
-                "type": "array", 
-                "description": "Statistics for instances running on requested time period"
-            }, 
-            "usage": {
-                "required": true, 
                 "type": "object", 
-                "description": "Resource usage (sum for all instances)"
+                "description": "Project instances statistics"
             }, 
-            "running_sec": {
-                "required": true, 
-                "type": "integer", 
-                "description": "Sum of running_sec for all instances"
+            "images": {
+                "required": false, 
+                "type": "object", 
+                "description": "Project images statistics"
             }
         }
     }
 
-``instances`` key is available only if time period is month or day and a
-particular project is requested (queries ``GET /projects/{project}``,
-``GET /projects/{project}/{year}/{month}``, and
-``GET /projects/{project}/{year}/{month}/{day}``).
-
-
-Instance statistics object has the following schema:
+Project instances and project images statistics objects have the following schema:
 
 .. code-block:: javascript
 
     {
         "type": "object", 
-        "description": "Instance statistics", 
+        "description": "Project items statistics", 
         "properties": {
-            "instance_id": {
+            "count": {
+                "type": "integer", 
+                "description": "Number of items count"
+            }, 
+            "items": {
+                "items": {
+                    "type": "object", 
+                    "description": "Individual item statistics"
+                },
+                "type": "array", 
+                "description": "Statistics for individual items"
+                "required": false, 
+            }, 
+            "usage": {
+                "required": true, 
+                "type": "object", 
+                "description": "Resource usage (sum for all items)"
+            }
+        }
+    }
+
+
+``items`` property is available for long form of statistics.
+
+Individual item statistics object has the following schema:
+
+.. code-block:: javascript
+
+    {
+        "type": "object", 
+        "description": "Individual item statistics", 
+        "properties": {
+            "id": {
                 "required": true, 
                 "type": "integer", 
-                "description": "Instance ID"
+                "description": "ID of the object"
             }, 
+            "name": {
+                "required": true, 
+                "type": [
+                    "string", 
+                    "null"
+                ], 
+                "description": "Name of the object or null if none"
+            },
             "usage": {
                 "required": true, 
                 "type": "object", 
@@ -199,13 +234,13 @@ Instance statistics object has the following schema:
             "created_at": {
                 "required": true, 
                 "type": "string", 
-                "description": "Date of instance creation", 
+                "description": "Date of object creation", 
                 "format": "date-time"
             }, 
-            "running_sec": {
+            "lifetime_sec": {
                 "required": true, 
                 "type": "integer", 
-                "description": "Time in seconds while instance was running on requested time period"
+                "description": "Time in seconds while the object was alive during the requested time period"
             }, 
             "destroyed_at": {
                 "required": true, 
@@ -213,13 +248,11 @@ Instance statistics object has the following schema:
                     "string", 
                     "null"
                 ], 
-                "description": "Date of instance destruction (termination)", 
+                "description": "Date of object destruction (termination) or null if not destroyed", 
                 "format": "date-time"
             }
         }
     }
-
-Date of instance destruction is ``null`` if the instance is still running.
 
 Resource usage object has the following schema:
 
@@ -230,27 +263,30 @@ Resource usage object has the following schema:
         "description": "Resource usage", 
         "properties": {
             "local_gb_h": {
-                "required": true, 
+                "required": false, 
                 "type": "number", 
                 "description": "Hard drive usage (GB * h)"
             }, 
             "vcpus_h": {
-                "required": true, 
+                "required": false, 
                 "type": "number", 
                 "description": "CPU usage (number of CPUs * h)"
             }, 
             "memory_mb_h": {
-                "required": true, 
+                "required": false, 
                 "type": "number", 
                 "description": "RAM usage (MB * h)"
             }
         }
     }
 
+If a property of resource usage object is omitted, it means that its value is zero.
+
+
 Examples
 --------
 
-Statistics for ``systenant`` project on 2011 year:
+Instances statistics for ``systenant`` project on 2011 year:
 
 .. code-block:: javascript
 
@@ -259,119 +295,21 @@ Statistics for ``systenant`` project on 2011 year:
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-01-01T00:00:00Z", 
         "project": {
-            "instances_count": 7, 
-            "name": "systenant", 
-            "running_sec": 926399, 
-            "url": "http://127.0.0.1:8787/projects/systenant", 
-            "usage": {
-                "local_gb_h": 13560.144444444444, 
-                "memory_mb_h": 1388558.7911111112, 
-                "vcpus_h": 678.0072222222223
-            }
-        }
-    }
-
-Statistics for ``systenant`` project on December, 2011:
-
-.. code-block:: javascript
-
-    $ curl "http://localhost:8787/projects/systenant/2011/12" | python -mjson.tool
-    {
-        "period_end": "2012-01-01T00:00:00Z", 
-        "period_start": "2011-12-01T00:00:00Z", 
-        "project": {
-            "instances": [
-                {
-                    "created_at": "2011-12-15T18:22:33.887135Z", 
-                    "destroyed_at": "2011-12-20T15:00:05.943989Z", 
-                    "instance_id": 55, 
-                    "running_sec": 419852, 
-                    "usage": {
-                        "local_gb_h": 2332.511111111111, 
-                        "memory_mb_h": 238849.13777777777, 
-                        "vcpus_h": 116.62555555555555
-                    }
-                }, 
-                {
-                    "created_at": "2011-12-15T18:23:06.452062Z", 
-                    "destroyed_at": "2011-12-15T18:52:05.391688Z", 
-                    "instance_id": 56, 
-                    "running_sec": 1738, 
-                    "usage": {
-                        "local_gb_h": 9.655555555555555, 
-                        "memory_mb_h": 988.7288888888888, 
-                        "vcpus_h": 0.48277777777777775
-                    }
-                }, 
-                {
-                    "created_at": "2011-12-20T10:51:55.133627Z", 
-                    "destroyed_at": "2011-12-20T15:00:06.150415Z", 
-                    "instance_id": 57, 
-                    "running_sec": 14891, 
-                    "usage": {
-                        "local_gb_h": 330.9111111111111, 
-                        "memory_mb_h": 33885.29777777778, 
-                        "vcpus_h": 16.545555555555556
-                    }
-                }, 
-                {
-                    "created_at": "2011-12-20T11:06:47.248165Z", 
-                    "destroyed_at": "2011-12-20T15:00:05.741222Z", 
-                    "instance_id": 58, 
-                    "running_sec": 13998, 
-                    "usage": {
-                        "local_gb_h": 311.06666666666666, 
-                        "memory_mb_h": 31853.226666666666, 
-                        "vcpus_h": 15.553333333333333
-                    }
-                }, 
-                {
-                    "created_at": "2011-12-20T15:00:26.935897Z", 
-                    "destroyed_at": null, 
-                    "instance_id": 59, 
-                    "running_sec": 158737, 
-                    "usage": {
-                        "local_gb_h": 3527.488888888889, 
-                        "memory_mb_h": 361214.8622222222, 
-                        "vcpus_h": 176.37444444444444
-                    }
-                }, 
-                {
-                    "created_at": "2011-12-20T15:01:46.182289Z", 
-                    "destroyed_at": null, 
-                    "instance_id": 60, 
-                    "running_sec": 158658, 
-                    "usage": {
-                        "local_gb_h": 3525.733333333333, 
-                        "memory_mb_h": 361035.0933333333, 
-                        "vcpus_h": 176.28666666666666
-                    }
-                }, 
-                {
-                    "created_at": "2011-12-20T15:03:59.334251Z", 
-                    "destroyed_at": null, 
-                    "instance_id": 61, 
-                    "running_sec": 158525, 
-                    "usage": {
-                        "local_gb_h": 3522.777777777778, 
-                        "memory_mb_h": 360732.44444444444, 
-                        "vcpus_h": 176.13888888888889
-                    }
+            "instances": {
+                "count": 7, 
+                "usage": {
+                    "local_gb_h": 68495.83333333333, 
+                    "memory_mb_h": 7013973.333333333, 
+                    "vcpus_h": 3424.7916666666665
                 }
-            ], 
-            "instances_count": 7, 
+            }, 
             "name": "systenant", 
-            "running_sec": 926399, 
-            "url": "http://127.0.0.1:8787/projects/systenant", 
-            "usage": {
-                "local_gb_h": 13560.144444444444, 
-                "memory_mb_h": 1388558.7911111112, 
-                "vcpus_h": 678.0072222222223
-            }
+            "url": "http://127.0.0.1:8787/projects/systenant"
         }
     }
 
-Statistics for all projects on December, 2011:
+
+Instances statistics for all projects on December, 2011:
 
 .. code-block:: javascript
 
@@ -381,15 +319,86 @@ Statistics for all projects on December, 2011:
         "period_start": "2011-12-01T00:00:00Z", 
         "projects": {
             "systenant": {
-                "instances_count": 7, 
+                "instances": {
+                    "count": 7, 
+                    "usage": {
+                        "local_gb_h": 68495.83333333333, 
+                        "memory_mb_h": 7013973.333333333, 
+                        "vcpus_h": 3424.7916666666665
+                    }
+                }, 
                 "name": "systenant", 
-                "running_sec": 926399, 
-                "url": "http://127.0.0.1:8787/projects/systenant", 
-                "usage": {
-                    "local_gb_h": 13560.144444444444, 
-                    "memory_mb_h": 1388558.7911111112, 
-                    "vcpus_h": 678.0072222222223
-                }
+                "url": "http://127.0.0.1:8787/projects/systenant"
+            }, 
+            "tenant2": {
+                "instances": {
+                    "count": 0, 
+                    "usage": {}
+                }, 
+                "name": "tenant2", 
+                "url": "http://127.0.0.1:8787/projects/tenant2"
             }
+        }
+    }
+
+Images statistics (long form) for projects tenant2 on from 2011-01-01 00:00:00 till 2012-01-01 01:00:00:
+
+.. code-block:: javascript
+
+    $ curl "http://localhost:8787/projects/tenant2?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" | python -mjson.tool
+    {
+        "period_end": "2012-01-01T00:00:00Z", 
+        "period_start": "2011-01-01T01:00:00Z", 
+        "project": {
+            "images": {
+                "count": 4, 
+                "items": [
+                    {
+                        "created_at": "2011-12-28T16:25:21.852159Z", 
+                        "destroyed_at": null, 
+                        "id": 1, 
+                        "lifetime_sec": 286478, 
+                        "name": "SL61_ramdisk", 
+                        "usage": {
+                            "local_gb_h": 0.0011111111111111111
+                        }
+                    }, 
+                    {
+                        "created_at": "2011-12-28T16:25:22.615385Z", 
+                        "destroyed_at": null, 
+                        "id": 2, 
+                        "lifetime_sec": 286477, 
+                        "name": "SL61_kernel", 
+                        "usage": {
+                            "local_gb_h": 0.2875
+                        }
+                    }, 
+                    {
+                        "created_at": "2011-12-28T16:25:23.376856Z", 
+                        "destroyed_at": null, 
+                        "id": 3, 
+                        "lifetime_sec": 286476, 
+                        "name": "SL61", 
+                        "usage": {
+                            "local_gb_h": 16.071666666666665
+                        }
+                    }, 
+                    {
+                        "created_at": "2011-12-29T08:04:07.497591Z", 
+                        "destroyed_at": null, 
+                        "id": 4, 
+                        "lifetime_sec": 230152, 
+                        "name": "ramdisk2", 
+                        "usage": {
+                            "local_gb_h": 0.0008333333333333334
+                        }
+                    }
+                ], 
+                "usage": {
+                    "local_gb_h": 16.36111111111111
+                }
+            }, 
+            "name": "tenant2", 
+            "url": "http://127.0.0.1:8787/projects/tenant2"
         }
     }

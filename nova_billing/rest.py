@@ -31,7 +31,10 @@ from nova import wsgi as base_wsgi
 from nova.api.openstack import wsgi as os_wsgi
 
 from nova_billing.db import api as db_api
-from nova_billing.usage import dict_add
+from nova_billing import utils
+from nova_billing import glance_utils
+from nova_billing import nova_utils
+from nova_billing import keystone_utils
 from nova_billing.version import version_string
 
 
@@ -41,19 +44,8 @@ flags.DEFINE_string("billing_listen", "0.0.0.0",
 flags.DEFINE_integer("billing_listen_port", 8787, "Billing API port")
 
 
-def datetime_to_str(dt):
-    """
-    Convert datetime.datetime instance to string.
-    Used for JSONization.
-    """
-    return ("%sZ" % dt.isoformat()) if dt else None
-
-
-def get_current_datetime():
-    """
-    Returns ``datetime.datetime.now()``. Used for patching in unit test.
-    """
-    return datetime.datetime.now()
+nova_projects = nova_utils.NovaProjects()
+keystone_tenants = keystone_utils.KeystoneTenants()
 
 
 class BillingController(object):
@@ -61,6 +53,55 @@ class BillingController(object):
     WSGI application that reads routing information supplied by ``RoutesMiddleware``
     and returns a report.
     """
+
+    def get_period(self, req, arg_dict):
+        if not arg_dict.has_key("year"):
+            if "period_start" in req.GET:
+                period_start = utils.str_to_datetime(req.GET["period_start"])
+                try:
+                    period_end = utils.str_to_datetime(req.GET["period_end"])
+                except KeyError:
+                    raise webob.exc.HTTPBadRequest(explanation="period_end is required")
+                if not (period_start and period_end):
+                    raise webob.exc.HTTPBadRequest(
+                        explanation="date should be in ISO 8601 format of YYYY-MM-DDThh:mm:ssZ")
+                if period_start >= period_end:
+                    raise webob.exc.HTTPBadRequest(
+                        explanation="period_start must be less than period_end")
+                return period_start, period_end
+            else:
+                now = utils.now()
+                year = now.year
+                month = now.month
+                day = 1
+                duration = "month"
+        else:
+            year = int(arg_dict["year"])
+            duration = "year"
+            try:
+                month = int(arg_dict["month"])
+                duration = "month"
+            except KeyError:
+                month = 1
+            try:
+                day = int(arg_dict["day"])
+                duration = "day"
+            except KeyError:
+                day = 1
+
+        period_start = datetime.datetime(year=year, month=month, day=day)
+        if duration.startswith("d"):
+            period_end = period_start + datetime.timedelta(days=1)
+        else:
+            if duration.startswith("m"):
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+            else:
+                year += 1
+            period_end = datetime.datetime(year=year, month=month, day=day)
+        return period_start, period_end
 
     @webob.dec.wsgify
     def __call__(self, req):
@@ -87,80 +128,89 @@ class BillingController(object):
             return webob.Response(json.dumps(ans_dict),
                          content_type='application/json')
 
-        if not arg_dict.has_key("year"):
-            now = get_current_datetime()
-            year = now.year
-            month = now.month
-            day = 1
-            duration= "month"
-        else:
-            year = int(arg_dict["year"])
-            duration = "year"
-            try:
-                month = int(arg_dict["month"])
-                duration = "month"
-            except KeyError:
-                month = 1
-            try:
-                day = int(arg_dict["day"])
-                duration = "day"
-            except KeyError:
-                day = 1
+        STATISTICS_NONE = 0
+        STATISTICS_SHORT = 1
+        STATISTICS_LONG = 2
 
-        period_start = datetime.datetime(year=year, month=month, day=day)
-        if duration.startswith("d"):
-            period_stop = period_start + datetime.timedelta(days=1)
-        else:
-            if duration.startswith("m"):
-                month += 1
-                if month > 12:
-                    month = 1
-                    year += 1
-            else:
-                year += 1
-            period_stop = datetime.datetime(year=year, month=month, day=day)
-
+        period_start, period_end = self.get_period(req, arg_dict)
         queried_project = arg_dict.get("project", None)
-        total_statistics = db_api.instances_on_interval(
-            period_start, period_stop, queried_project)
-        show_instances = not duration.startswith("y") and queried_project
+        statistics = {"instances": STATISTICS_NONE,
+                      "images": STATISTICS_NONE}
+        try:
+            include = req.GET["include"]
+        except KeyError:
+            statistics["instances"] = (STATISTICS_LONG
+                if period_end - period_start <= datetime.timedelta(days=31)
+                    and queried_project
+                else STATISTICS_SHORT)
+        else:
+            include = include.strip(",")
+            for key in "images", "instances":
+                if (key + "-long") in include:
+                    statistics[key] = STATISTICS_LONG
+                elif key in include:
+                    statistics[key] = STATISTICS_SHORT
+
+        tenants = keystone_tenants.get_tenants()
+        reported_projects = (set(nova_projects.get_projects())
+                             | set([tenant.name for tenant in tenants]))
+
+        if queried_project:
+            if queried_project in reported_projects:
+                reported_projects = set([queried_project])
+            else:
+                return webob.exc.HTTPNotFound()
         projects = {}
-        if queried_project and not total_statistics.has_key(queried_project):
-            total_statistics[queried_project] = {}
-
-        def usage_to_hours(usage):
-            return dict([(key + "_h", usage[key] / 3600.0) for key in usage])
-
-        for project_id, project_statistics in total_statistics.items():
-            project_dict = {
+        for project_id in reported_projects:
+            projects[project_id] = {
                 "name": project_id,
                 "url": "http://%s:%s/projects/%s" %
                        (req.environ["SERVER_NAME"],
                         req.environ["SERVER_PORT"],
                         project_id),
-                "instances_count": len(project_statistics),
-                "running_sec": 0,
             }
-            project_usage = {"local_gb": 0, "memory_mb": 0, "vcpus": 0}
-            instances = []
-            for instance_id, instance_statistics in project_statistics.items():
-                project_dict["running_sec"] += instance_statistics["running"]
-                dict_add(project_usage, instance_statistics["usage"])
-                if show_instances:
-                    instance_dict = {"instance_id": instance_id,
-                                     "running_sec": instance_statistics["running"]}
-                    instance_dict["usage"] = usage_to_hours(instance_statistics["usage"])
-                    for key in "created_at", "destroyed_at":
-                        instance_dict[key] = datetime_to_str(instance_statistics[key])
-                    instances.append(instance_dict)
+        now = utils.now()
+        for statistics_key in "images", "instances":
+            if not statistics[statistics_key]:
+                continue
+            show_items = statistics[statistics_key] == STATISTICS_LONG
+            if statistics_key == "images":
+                total_statistics = glance_utils.images_on_interval(
+                    tenants, period_start, period_end, queried_project)
+            else:
+                total_statistics = db_api.instances_on_interval(
+                    period_start, period_end, queried_project)
+            for project_id in projects:
+                project_statistics = total_statistics.get(project_id, {})
+                project_dict = {
+                    "count": len(project_statistics),
+                }
+                project_usage = {}
+                items = []
+                for item_id, item_statistics in project_statistics.items():
+                    utils.dict_add(project_usage, item_statistics["usage"])
+                    if show_items:
+                        lifetime = utils.total_seconds(
+                            min(item_statistics["destroyed_at"] or now, period_end) -
+                            max(item_statistics["created_at"], period_start))
+                        item_dict = {
+                            "id": item_id,
+                            "lifetime_sec": lifetime,
+                            "usage": utils.usage_to_hours(item_statistics["usage"]),
+                            "name": item_statistics.get("name", None),
+                        }
+                        for key in "created_at", "destroyed_at":
+                            item_dict[key] = utils.datetime_to_str(item_statistics[key])
+                        items.append(item_dict)
 
-            if show_instances:
-                project_dict["instances"] = instances
-            project_dict["usage"] = usage_to_hours(project_usage)
-            projects[project_id] = project_dict
+                if show_items:
+                    project_dict["items"] = items
+                project_dict["usage"] = utils.usage_to_hours(project_usage)
+                projects[project_id][statistics_key] = project_dict
+
         ans_dict = {
-            "period_start": datetime_to_str(period_start),
-            "period_end": datetime_to_str(period_stop)
+            "period_start": utils.datetime_to_str(period_start),
+            "period_end": utils.datetime_to_str(period_end)
         }
         if queried_project:
             ans_dict["project"] = projects[queried_project]

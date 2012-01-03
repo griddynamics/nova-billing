@@ -1,0 +1,428 @@
+{
+    "/": {
+        "application": "nova-billing", 
+        "version": "0.0.2", 
+        "urls": {
+            "projects-all": "http://localhost:80/projects-all", 
+            "projects": "http://localhost:80/projects"
+        }
+    },
+    "/projects": {
+        "period_start": "2011-01-01T00:00:00Z", 
+        "projects": {
+            "tenant12": {
+                "url": "http://localhost:80/projects/tenant12", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 130.0, 
+                        "vcpus_h": 42.0, 
+                        "memory_mb_h": 165.0
+                    }
+                }, 
+                "name": "tenant12"
+            }, 
+            "systenant": {
+                "url": "http://localhost:80/projects/systenant", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 79.0, 
+                        "vcpus_h": 80.0, 
+                        "memory_mb_h": 55.0
+                    }
+                }, 
+                "name": "systenant"
+            }
+        }, 
+        "period_end": "2011-02-01T00:00:00Z"
+    },
+    "/projects-all": {
+        "period_start": "2011-01-01T00:00:00Z", 
+        "projects": {
+            "tenant12": {
+                "url": "http://localhost:80/projects/tenant12", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 130.0, 
+                        "vcpus_h": 42.0, 
+                        "memory_mb_h": 165.0
+                    }
+                }, 
+                "name": "tenant12"
+            }, 
+            "systenant": {
+                "url": "http://localhost:80/projects/systenant", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 79.0, 
+                        "vcpus_h": 80.0, 
+                        "memory_mb_h": 55.0
+                    }
+                }, 
+                "name": "systenant"
+            }
+        }, 
+        "period_end": "2011-02-01T00:00:00Z"
+    },
+    "/projects-all/2011": {
+        "period_start": "2011-01-01T00:00:00Z", 
+        "projects": {
+            "tenant12": {
+                "url": "http://localhost:80/projects/tenant12", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 130.0, 
+                        "vcpus_h": 42.0, 
+                        "memory_mb_h": 165.0
+                    }
+                }, 
+                "name": "tenant12"
+            }, 
+            "systenant": {
+                "url": "http://localhost:80/projects/systenant", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 79.0, 
+                        "vcpus_h": 80.0, 
+                        "memory_mb_h": 55.0
+                    }
+                }, 
+                "name": "systenant"
+            }
+        }, 
+        "period_end": "2012-01-01T00:00:00Z"
+    },
+    "/projects-all/2011/01": {
+        "period_start": "2011-01-01T00:00:00Z", 
+        "projects": {
+            "tenant12": {
+                "url": "http://localhost:80/projects/tenant12", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 130.0, 
+                        "vcpus_h": 42.0, 
+                        "memory_mb_h": 165.0
+                    }
+                }, 
+                "name": "tenant12"
+            }, 
+            "systenant": {
+                "url": "http://localhost:80/projects/systenant", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 79.0, 
+                        "vcpus_h": 80.0, 
+                        "memory_mb_h": 55.0
+                    }
+                }, 
+                "name": "systenant"
+            }
+        }, 
+        "period_end": "2011-02-01T00:00:00Z"
+    },
+    "/projects-all/2011/1/1": {
+        "period_start": "2011-01-01T00:00:00Z", 
+        "projects": {
+            "tenant12": {
+                "url": "http://localhost:80/projects/tenant12", 
+                "instances": {
+                    "count": 1, 
+                    "usage": {
+                        "local_gb_h": 73.0, 
+                        "vcpus_h": 39.0, 
+                        "memory_mb_h": 66.0
+                    }
+                }, 
+                "name": "tenant12"
+            }, 
+            "systenant": {
+                "url": "http://localhost:80/projects/systenant", 
+                "instances": {
+                    "count": 1, 
+                    "usage": {
+                        "local_gb_h": 12.0, 
+                        "vcpus_h": 39.0, 
+                        "memory_mb_h": 45.0
+                    }
+                }, 
+                "name": "systenant"
+            }
+        }, 
+        "period_end": "2011-01-02T00:00:00Z"
+    },
+    "/projects/systenant": {
+        "project": {
+            "url": "http://localhost:80/projects/systenant", 
+            "instances": {
+                "count": 2, 
+                "items": [
+                    {
+                        "name": null, 
+                        "created_at": "2011-01-01T00:00:00Z", 
+                        "lifetime_sec": 86400, 
+                        "usage": {
+                            "local_gb_h": 12.0, 
+                            "vcpus_h": 39.0, 
+                            "memory_mb_h": 45.0
+                        }, 
+                        "destroyed_at": "2011-01-02T00:00:00Z", 
+                        "id": 12
+                    }, 
+                    {
+                        "name": null, 
+                        "created_at": "2011-01-04T00:00:00Z", 
+                        "lifetime_sec": 2419200, 
+                        "usage": {
+                            "local_gb_h": 67.0, 
+                            "vcpus_h": 41.0, 
+                            "memory_mb_h": 10.0
+                        }, 
+                        "destroyed_at": "2011-02-01T00:00:00Z", 
+                        "id": 14
+                    }
+                ], 
+                "usage": {
+                    "local_gb_h": 79.0, 
+                    "vcpus_h": 80.0, 
+                    "memory_mb_h": 55.0
+                }
+            }, 
+            "name": "systenant"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2011-02-01T00:00:00Z"
+    },
+    "/projects/tenant12/2011": {
+        "project": {
+            "url": "http://localhost:80/projects/tenant12", 
+            "instances": {
+                "count": 2, 
+                "usage": {
+                    "local_gb_h": 130.0, 
+                    "vcpus_h": 42.0, 
+                    "memory_mb_h": 165.0
+                }
+            }, 
+            "name": "tenant12"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2012-01-01T00:00:00Z"
+    },
+    "/projects/tenant12/2011/1": {
+        "project": {
+            "url": "http://localhost:80/projects/tenant12", 
+            "instances": {
+                "count": 2, 
+                "items": [
+                    {
+                        "name": null, 
+                        "created_at": "2011-02-01T00:00:00Z", 
+                        "lifetime_sec": 0, 
+                        "usage": {
+                            "local_gb_h": 57.0, 
+                            "vcpus_h": 3.0, 
+                            "memory_mb_h": 99.0
+                        }, 
+                        "destroyed_at": "2011-02-03T00:00:00Z", 
+                        "id": 67
+                    }, 
+                    {
+                        "name": null, 
+                        "created_at": "2011-01-01T00:00:00Z", 
+                        "lifetime_sec": 86400, 
+                        "usage": {
+                            "local_gb_h": 73.0, 
+                            "vcpus_h": 39.0, 
+                            "memory_mb_h": 66.0
+                        }, 
+                        "destroyed_at": "2011-01-02T00:00:00Z", 
+                        "id": 54
+                    }
+                ], 
+                "usage": {
+                    "local_gb_h": 130.0, 
+                    "vcpus_h": 42.0, 
+                    "memory_mb_h": 165.0
+                }
+            }, 
+            "name": "tenant12"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2011-02-01T00:00:00Z"
+    },
+    "/projects/tenant12/2011/1/1": {
+        "project": {
+            "url": "http://localhost:80/projects/tenant12", 
+            "instances": {
+                "count": 1, 
+                "items": [
+                    {
+                        "name": null, 
+                        "created_at": "2011-01-01T00:00:00Z", 
+                        "lifetime_sec": 86400, 
+                        "usage": {
+                            "local_gb_h": 73.0, 
+                            "vcpus_h": 39.0, 
+                            "memory_mb_h": 66.0
+                        }, 
+                        "destroyed_at": "2011-01-02T00:00:00Z", 
+                        "id": 54
+                    }
+                ], 
+                "usage": {
+                    "local_gb_h": 73.0, 
+                    "vcpus_h": 39.0, 
+                    "memory_mb_h": 66.0
+                }
+            }, 
+            "name": "tenant12"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2011-01-02T00:00:00Z"
+    },
+    "/projects/systenant?period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
+        "project": {
+            "url": "http://localhost:80/projects/systenant", 
+            "instances": {
+                "count": 2, 
+                "usage": {
+                    "local_gb_h": 79.0, 
+                    "vcpus_h": 80.0, 
+                    "memory_mb_h": 55.0
+                }
+            }, 
+            "name": "systenant"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2012-01-01T00:00:00Z"
+    },
+    "/projects-all?period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
+        "period_start": "2011-01-01T00:00:00Z", 
+        "projects": {
+            "tenant12": {
+                "url": "http://localhost:80/projects/tenant12", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 130.0, 
+                        "vcpus_h": 42.0, 
+                        "memory_mb_h": 165.0
+                    }
+                }, 
+                "name": "tenant12"
+            }, 
+            "systenant": {
+                "url": "http://localhost:80/projects/systenant", 
+                "instances": {
+                    "count": 2, 
+                    "usage": {
+                        "local_gb_h": 79.0, 
+                        "vcpus_h": 80.0, 
+                        "memory_mb_h": 55.0
+                    }
+                }, 
+                "name": "systenant"
+            }
+        }, 
+        "period_end": "2012-01-01T00:00:00Z"
+    },
+    "/projects/systenant?include=instances-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
+        "project": {
+            "url": "http://localhost:80/projects/systenant", 
+            "instances": {
+                "count": 2, 
+                "items": [
+                    {
+                        "name": null, 
+                        "created_at": "2011-01-01T00:00:00Z", 
+                        "lifetime_sec": 86400, 
+                        "usage": {
+                            "local_gb_h": 12.0, 
+                            "vcpus_h": 39.0, 
+                            "memory_mb_h": 45.0
+                        }, 
+                        "destroyed_at": "2011-01-02T00:00:00Z", 
+                        "id": 12
+                    }, 
+                    {
+                        "name": null, 
+                        "created_at": "2011-01-04T00:00:00Z", 
+                        "lifetime_sec": 2419200, 
+                        "usage": {
+                            "local_gb_h": 67.0, 
+                            "vcpus_h": 41.0, 
+                            "memory_mb_h": 10.0
+                        }, 
+                        "destroyed_at": "2011-02-01T00:00:00Z", 
+                        "id": 14
+                    }
+                ], 
+                "usage": {
+                    "local_gb_h": 79.0, 
+                    "vcpus_h": 80.0, 
+                    "memory_mb_h": 55.0
+                }
+            }, 
+            "name": "systenant"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2012-01-01T00:00:00Z"
+    },
+    "/projects/systenant?include=images&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
+        "project": {
+            "url": "http://localhost:80/projects/systenant", 
+            "images": {
+                "count": 2, 
+                "usage": {
+                    "local_gb_h": 79.0
+                }
+            }, 
+            "name": "systenant"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2012-01-01T00:00:00Z"
+    },
+    "/projects/systenant?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
+        "project": {
+            "url": "http://localhost:80/projects/systenant", 
+            "images": {
+                "count": 2, 
+                "items": [
+                    {
+                        "name": "RHEL 6.1", 
+                        "created_at": "2011-01-01T00:00:00Z", 
+                        "lifetime_sec": 86400, 
+                        "usage": {
+                            "local_gb_h": 12.0
+                        }, 
+                        "destroyed_at": "2011-01-02T00:00:00Z", 
+                        "id": 21
+                    }, 
+                    {
+                        "name": "Ubuntu kernel", 
+                        "created_at": "2011-01-04T00:00:00Z", 
+                        "lifetime_sec": 2419200, 
+                        "usage": {
+                            "local_gb_h": 67.0
+                        }, 
+                        "destroyed_at": "2011-02-01T00:00:00Z", 
+                        "id": 39
+                    }
+                ], 
+                "usage": {
+                    "local_gb_h": 79.0
+                }
+            }, 
+            "name": "systenant"
+        }, 
+        "period_start": "2011-01-01T00:00:00Z", 
+        "period_end": "2012-01-01T00:00:00Z"
+    }
+}

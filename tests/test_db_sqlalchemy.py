@@ -109,7 +109,6 @@ class TestCase(tests.TestCase):
         instance = instances["systenant"][self.instance_id]
         self.assertTrue(instance.has_key("created_at"))
         self.assertTrue(instance.has_key("destroyed_at"))
-        self.assertTrue(instance.has_key("running"))
         self.assertTrue(instance.has_key("usage"))
 
         usage_info = instance["usage"]

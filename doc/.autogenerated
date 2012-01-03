@@ -3,6 +3,10 @@ source/api/nova_billing.rest.rst
 source/api/nova_billing.db.sqlalchemy.session.rst
 source/api/nova_billing.db.sqlalchemy.api.rst
 source/api/nova_billing.db.sqlalchemy.models.rst
+source/api/nova_billing.utils.rst
 source/api/nova_billing.vm_states.rst
-source/api/nova_billing.usage.rst
+source/api/nova_billing.nova_utils.rst
+source/api/nova_billing.keystone_utils.rst
+source/api/nova_billing.glance_utils.rst
 source/api/nova_billing.amqp.rst
+source/api/autoindex.rst

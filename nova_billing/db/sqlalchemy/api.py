@@ -31,7 +31,7 @@ from nova import utils
 from nova_billing.db.sqlalchemy import models
 from nova_billing.db.sqlalchemy.models import InstanceSegment, InstanceInfo
 from nova_billing.db.sqlalchemy.session import get_session, get_engine
-from nova_billing.usage import usage_add, total_seconds
+from nova_billing import utils
 
 
 FLAGS = flags.FLAGS
@@ -41,20 +41,6 @@ def configure_backend():
     Perform backend initialization.
     """
     models.register_models()
-
-
-def _parse_datetime(dtstr):
-    if not dtstr:
-        return None
-    for fmt in ("%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S.%f",
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%d %H:%M:%S.%f"):
-        try:
-            return datetime.strptime(dtstr, fmt)
-        except ValueError:
-            pass
-    return None
 
 
 def instance_info_create(values, session=None):
@@ -124,13 +110,11 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                 12: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
-                    "running": 86400,
                     "usage": {"local_gb": 56, "memory_mb": 89, "vcpus": 4},
                 },
                 14: {
                     "created_at": datetime.datetime(2011, 1, 4),
                     "destroyed_at": datetime.datetime(2011, 2, 1),
-                    "running": 2419200,
                     "usage": {"local_gb": 18, "memory_mb": 45, "vcpus": 5},
                 },
             },
@@ -138,7 +122,6 @@ def instances_on_interval(period_start, period_stop, project_id=None):
                 24: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
-                    "running": 86400,
                     "usage": {"local_gb": 33, "memory_mb": 12, "vcpus": 8},
                 },
             }
@@ -166,14 +149,14 @@ def instances_on_interval(period_start, period_stop, project_id=None):
             inst_descr = {
                 "created_at": None,
                 "destroyed_at": None,
-                "running": 0,
+                "lifetime": 0,
                 "usage": {}
             }
             retval[info.project_id][info.instance_id] = inst_descr
             inst_by_id[info.instance_id] = inst_descr
         begin_at = max(segment.begin_at, period_start)
         end_at = min(segment.end_at or datetime.utcnow(), period_stop)
-        usage_add(inst_descr["usage"], begin_at, end_at,
+        utils.usage_add(inst_descr["usage"], begin_at, end_at,
                   segment.segment_type, info)
 
     result = session.query(InstanceSegment,
@@ -196,8 +179,5 @@ def instances_on_interval(period_start, period_stop, project_id=None):
         inst_descr["created_at"] = row.min_start
         if row.max_stop is None or row.max_start < row.max_stop:
             inst_descr["destroyed_at"] = row.max_stop
-        created_at = max(inst_descr["created_at"], period_start)
-        destroyed_at = min(inst_descr["destroyed_at"] or datetime.utcnow(), period_stop)
-        inst_descr["running"] = total_seconds(destroyed_at - created_at)
 
     return retval

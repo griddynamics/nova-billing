@@ -21,23 +21,23 @@ Try to run or terminate an instance and check that the daemon returns reports:
 
     $ curl http://localhost:8787/projects/systenant/2011 | python -mjson.tool
 
-
 Its output should look like this:
 
 .. code-block:: javascript
 
     {
         "period_end": "2012-01-01T00:00:00Z", 
-        "period_start": "2011-12-01T00:00:00Z", 
+        "period_start": "2011-01-01T00:00:00Z", 
         "project": {
-            "instances_count": 1, 
+            "instances": {
+                "count": 7, 
+                "usage": {
+                    "local_gb_h": 68495.83333333333, 
+                    "memory_mb_h": 7013973.333333333, 
+                    "vcpus_h": 3424.7916666666665
+                }
+            }, 
             "name": "systenant", 
-            "running_sec": 26, 
-            "url": "http://127.0.0.1:8787/projects/systenant", 
-            "usage": {
-                "local_gb_h": 13.0, 
-                "memory_mb_h": 13.0, 
-                "vcpus_h": 7.0
-            }
+            "url": "http://127.0.0.1:8787/projects/systenant"
         }
     }

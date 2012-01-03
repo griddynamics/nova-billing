@@ -40,6 +40,7 @@ from nova import log as logging
 
 from nova_billing import vm_states
 from nova_billing.db import api as db_api
+from nova_billing import utils
 
 
 LOG = logging.getLogger("nova_billing.amqp_listener")
@@ -170,7 +171,7 @@ class Service(object):
         LOG.debug("routing_key=%s method=%s%s" % (routing_key, method, descr))
 
     def get_event_datetime(self, body):
-        return datetime.utcnow()
+        return utils.now()
 
     def consume(self):
         """

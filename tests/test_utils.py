@@ -25,7 +25,7 @@ import sys
 import datetime
 import unittest
 
-from nova_billing import usage
+from nova_billing import utils
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tests
@@ -35,5 +35,5 @@ class UsageTest(tests.TestCase):
     def test_total_seconds(self):
         begin_at = datetime.datetime(2011, 1, 12, 0, 0)
         end_at = datetime.datetime(2011, 1, 12, 0, 1)
-        seconds = usage.total_seconds(end_at - begin_at)
+        seconds = utils.total_seconds(end_at - begin_at)
         self.assertEquals(seconds, 60)
