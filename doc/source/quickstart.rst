@@ -3,13 +3,13 @@ Quickstart
 
 Install the package:
 
-.. code-block:: shell
+.. code-block:: bash
 
     # yum install nova-billing
 
 Start the server:
 
-.. code-block:: shell
+.. code-block:: bash
 
     # /etc/init.d/nova-billing start
 
@@ -17,7 +17,7 @@ Now instance state changes will be stored to a database.
 
 Try to run or terminate an instance and check that the daemon returns reports:
 
-.. code-block:: shell
+.. code-block:: bash
 
     $ curl http://localhost:8787/projects/systenant/2011 | python -mjson.tool
 

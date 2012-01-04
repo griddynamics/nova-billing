@@ -49,6 +49,7 @@ Documentation and examples for %{name}.
 %__rm -rf %{buildroot}
 
 %{__python} setup.py install -O1 --skip-build --prefix=%{_prefix} --root=%{buildroot}
+export PYTHONPATH=%{buildroot}%{python_sitelib}
 make -C doc html
 install -p -D -m 755 redhat/nova-billing.init %{buildroot}%{_initrddir}/%{name}
 
