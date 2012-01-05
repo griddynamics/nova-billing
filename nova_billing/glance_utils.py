@@ -34,10 +34,10 @@ from nova_billing import keystone_utils
 FLAGS = flags.FLAGS
 
 
-def images_on_interval(tenants, period_start, period_stop, project_id=None):
+def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant_id=None):
     """
     Retrieve images statistics for the given interval [``period_start``, ``period_stop``]. 
-    ``project_id=None`` means all projects.
+    ``tenant_id=None`` means all projects.
 
     Example of the returned value:
 
@@ -71,19 +71,7 @@ def images_on_interval(tenants, period_start, period_stop, project_id=None):
     :returns: a dictionary where keys are project ids and values are project statistics.
     """
 
-    tenant_id = None
-    if project_id:
-        for tenant in tenants:
-            if tenant.name == project_id:
-                tenant_id = str(tenant.id)
-                break
-        if not tenant_id:
-            return None
-    else:
-        tenant_by_id = dict([(tenant.id, tenant.name) for tenant in tenants])
-
     glance_host, glance_port = pick_glance_api_server()
-    auth_tok = keystone_utils.get_keystone_admin_token()
     client = glance_client.Client(glance_host, glance_port, auth_tok=auth_tok)
     images = client.get_images_detailed(filters={"is_public": "none"})
     if tenant_id:
@@ -114,6 +102,4 @@ def images_on_interval(tenants, period_start, period_stop, project_id=None):
             "usage": {"local_gb": image["size"] * lifetime / 2 ** 30}
         }
 
-    if tenant_id:
-        return {project_id: report_by_id.get(tenant_id, {})}
     return dict([(tenant_by_id[key], value) for key, value in report_by_id.iteritems()])

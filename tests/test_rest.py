@@ -88,7 +88,7 @@ class FakeDbApi(object):
 
 class FakeGlanceApi(object):
     @staticmethod
-    def images_on_interval(tenants, period_start, period_stop, project_id=None):
+    def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant_id=None):
         total_statistics = {
             "systenant": {
                 21: {
@@ -113,7 +113,8 @@ class FakeGlanceApi(object):
                 }
             }
         }
-        if project_id:
+        if tenant_id:
+            project_id = tenant_by_id[tenant_id]
             total_statistics = {project_id: total_statistics[project_id]}
         for proj in total_statistics:
             total_statistics[proj] = dict(
@@ -138,16 +139,33 @@ class TestCase(tests.TestCase):
 
         self.stubs.Set(utils, "now", lambda: datetime.datetime(2011, 1, 1))
         self.stubs.Set(nova_utils.NovaProjects, "get_projects",
-                       lambda (self): ["systenant", "tenant12"])
+                       lambda self: ["systenant", "tenant12"])
         from keystoneclient.v2_0.tenants import Tenant
         self.stubs.Set(keystone_utils.KeystoneTenants, "get_tenants",
-                       lambda (self): [Tenant(None, {"name": "systenant", "id": 1}),
+                       lambda self, token: [Tenant(None, {"name": "systenant", "id": 1}),
                                        Tenant(None, {"name": "tenant12", "id": 2})])
-        requests_file = open(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "api-requests.json"),
-            "rt")
-        rest_calls = json.load(requests_file)
-        requests_file.close()
-        for request in rest_calls:
-            result = webob.Request.blank(request).get_response(rest.BillingApplication())
-            self.assertEqual(json.loads(result.body), rest_calls[request])
+
+        def json_load_from_file(filename):
+            json_file = open(
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), filename),
+                "rt")
+            json_obj = json.load(json_file)
+            json_file.close()
+            return json_obj
+
+        for request, result_body in json_load_from_file("api-requests.json").items():
+            result = webob.Request.blank(
+                    request,
+                    headers={"X_ROLE": "Admin",
+                             "X_TENANT": "1",
+                             "X_TENANT_NAME": "systenant"}).\
+                    get_response(rest.BillingApplication())
+            self.assertEqual(result.status_int, 200)
+            self.assertEqual(json.loads(result.body), result_body)
+
+        for request in json_load_from_file("status-requests.json"):
+            result = webob.Request.blank(
+                    request["request"],
+                    headers=request["headers"],).\
+                    get_response(rest.BillingApplication())
+            self.assertEqual(result.status_int, request["status_int"])

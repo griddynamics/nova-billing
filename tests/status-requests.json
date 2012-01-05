@@ -1,0 +1,47 @@
+[
+    {
+        "headers": {
+            "X_TENANT_NAME": "systenant", 
+            "X_ROLE": "Member", 
+            "X_TENANT": "1"
+        }, 
+        "status_int": 401, 
+        "request": "/projects-all"
+    }, 
+    {
+        "headers": {
+            "X_TENANT_NAME": "systenant", 
+            "X_ROLE": "Member", 
+            "X_TENANT": "1"
+        }, 
+        "status_int": 200, 
+        "request": "/projects/systenant"
+    }, 
+    {
+        "headers": {
+            "X_TENANT_NAME": "systenant", 
+            "X_ROLE": "Member", 
+            "X_TENANT": "1"
+        }, 
+        "status_int": 401, 
+        "request": "/projects/tenant12"
+    }, 
+    {
+        "headers": {
+            "X_TENANT_NAME": "systenant", 
+            "X_ROLE": "Member", 
+            "X_TENANT": "1"
+        }, 
+        "status_int": 401, 
+        "request": "/projects/notexist"
+    }, 
+    {
+        "headers": {
+            "X_TENANT_NAME": "systenant", 
+            "X_ROLE": "Admin", 
+            "X_TENANT": "1"
+        }, 
+        "status_int": 404, 
+        "request": "/projects/notexist"
+    }
+]

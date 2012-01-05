@@ -30,6 +30,9 @@ from nova import service
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_string("billing_api_paste_config", "/etc/nova-billing/billing-api-paste.ini",
+                    "File name for the paste.deploy config for nova-billing api")
+
 
 _keystone_admin_token = None
 _keystone_admin_url = None
@@ -37,7 +40,7 @@ _keystone_admin_url = None
 
 def _get_keystone_stuff():
     config = ConfigParser.RawConfigParser()
-    config.read("/etc/nova/%s" % FLAGS.api_paste_config)
+    config.read(FLAGS.billing_api_paste_config)
     global _keystone_admin_token, _keystone_admin_url
     _keystone_admin_token = config.get("filter:authtoken", "admin_token")
     _keystone_admin_url = "%s://%s:%s/v2.0" % (
@@ -59,13 +62,7 @@ def get_keystone_admin_url():
 
 
 class KeystoneTenants(object):
-    tenants = []
-
-    def __init__(self):
-        self.keystone_client = keystone_client.Client(
+    def get_tenants(self, token):
+        return keystone_client.Client(
             endpoint=get_keystone_admin_url(),
-            token=get_keystone_admin_token())
-
-    def get_tenants(self):
-        self.tenants = self.keystone_client.tenants.list()
-        return self.tenants
+            token=token).tenants.list()
