@@ -22,9 +22,7 @@ Module for communication with Keystone.
 
 import ConfigParser
 
-from novaclient import client as nova_client
-from novaclient.keystone import tenants
-from novaclient.keystone import users
+from keystoneclient.v2_0 import client as keystone_client
 
 from nova import flags
 from nova import service
@@ -60,25 +58,13 @@ def get_keystone_admin_url():
     return _keystone_admin_url
 
 
-class KeystoneClient(object):
-    def __init__(self, client):
-        self.client = client
-        self.tenants = tenants.TenantManager(self)
-        self.users = users.UserManager(self)
-
-    def authenticate(self):
-        pass
-
-
 class KeystoneTenants(object):
     tenants = []
 
     def __init__(self):
-        keystone_admin_url = get_keystone_admin_url()
-        conn = nova_client.HTTPClient("admin", "secrete", "systenant", keystone_admin_url)
-        conn.auth_token = get_keystone_admin_token()
-        conn.management_url = keystone_admin_url
-        self.keystone_client = KeystoneClient(conn)
+        self.keystone_client = keystone_client.Client(
+            endpoint=get_keystone_admin_url(),
+            token=get_keystone_admin_token())
 
     def get_tenants(self):
         self.tenants = self.keystone_client.tenants.list()

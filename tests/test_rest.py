@@ -139,7 +139,7 @@ class TestCase(tests.TestCase):
         self.stubs.Set(utils, "now", lambda: datetime.datetime(2011, 1, 1))
         self.stubs.Set(nova_utils.NovaProjects, "get_projects",
                        lambda (self): ["systenant", "tenant12"])
-        from novaclient.keystone.tenants import Tenant
+        from keystoneclient.v2_0.tenants import Tenant
         self.stubs.Set(keystone_utils.KeystoneTenants, "get_tenants",
                        lambda (self): [Tenant(None, {"name": "systenant", "id": 1}),
                                        Tenant(None, {"name": "tenant12", "id": 2})])

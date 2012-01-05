@@ -1,2 +1,1 @@
-copy: redhat/*.init
-tar.gz: . name=nova-billing-@version@ base=nova-billing-@version@
+tar.gz: . name=@name@-@version@ base=@name@-@version@

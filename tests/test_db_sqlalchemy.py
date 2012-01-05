@@ -61,7 +61,8 @@ class TestCase(tests.TestCase):
     interval_end = datetime.datetime(2011, 1, 1, 0, 1)
 
     def clear_db(self):
-        os.remove(self.sqlite_file)
+        if os.path.exists(self.sqlite_file):
+            os.remove(self.sqlite_file)
         db_api.configure_backend()
 
     def test_instance_info_create(self):
