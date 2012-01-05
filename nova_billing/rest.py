@@ -45,7 +45,6 @@ flags.DEFINE_integer("billing_listen_port", 8787, "Billing API port")
 
 
 nova_projects = nova_utils.NovaProjects()
-keystone_tenants = keystone_utils.KeystoneTenants()
 
 
 class BillingController(object):
@@ -132,8 +131,17 @@ class BillingController(object):
         STATISTICS_SHORT = 1
         STATISTICS_LONG = 2
 
-        period_start, period_end = self.get_period(req, arg_dict)
         queried_project = arg_dict.get("project", None)
+        roles = [r.strip()
+                 for r in req.headers.get('X_ROLE', '').split(',')]
+        is_admin = "Admin" in roles
+        if not is_admin and (not queried_project or
+                req.headers.get('X_TENANT_NAME', '') != queried_project):
+            raise webob.exc.HTTPUnauthorized()
+
+        auth_token = req.headers.get('X_AUTH_TOKEN', '')
+
+        period_start, period_end = self.get_period(req, arg_dict)
         statistics = {"instances": STATISTICS_NONE,
                       "images": STATISTICS_NONE}
         try:
@@ -151,15 +159,30 @@ class BillingController(object):
                 elif key in include:
                     statistics[key] = STATISTICS_SHORT
 
-        tenants = keystone_tenants.get_tenants()
-        reported_projects = (set(nova_projects.get_projects())
-                             | set([tenant.name for tenant in tenants]))
+        if is_admin:
+            tenants = keystone_utils.KeystoneTenants().\
+                get_tenants(auth_token)
+            tenant_by_id = dict([(tenant.id, tenant.name) for tenant in tenants])
+            reported_projects = (set(nova_projects.get_projects())
+                            | set([tenant.name for tenant in tenants]))
 
-        if queried_project:
-            if queried_project in reported_projects:
-                reported_projects = set([queried_project])
+            if queried_project:
+                if queried_project in reported_projects:
+                    reported_projects = set([queried_project])
+                else:
+                    raise webob.exc.HTTPNotFound()
+                queried_tenant_id = '-1'
+                for tenant in tenants:
+                    if tenant.name == queried_project:
+                        queried_tenant_id = tenant.id
+                        break
             else:
-                return webob.exc.HTTPNotFound()
+                queried_tenant_id = None
+        else:
+            queried_tenant_id = req.headers.get('X_TENANT', '-1')
+            reported_projects = set([queried_project])
+            tenant_by_id = {queried_tenant_id: queried_project}
+
         projects = {}
         for project_id in reported_projects:
             projects[project_id] = {
@@ -176,7 +199,8 @@ class BillingController(object):
             show_items = statistics[statistics_key] == STATISTICS_LONG
             if statistics_key == "images":
                 total_statistics = glance_utils.images_on_interval(
-                    tenants, period_start, period_end, queried_project)
+                    period_start, period_end,
+                    tenant_by_id, auth_token, queried_tenant_id)
             else:
                 total_statistics = db_api.instances_on_interval(
                     period_start, period_end, queried_project)
@@ -257,11 +281,7 @@ class BillingApplication(base_wsgi.Router):
                         action="index")
         super(BillingApplication, self).__init__(mapper)
 
-
-class Loader(object):
-    """This loader is used to load WSGI billing application 
-    instead of ``nova.wsgi.Loader`` that loads applications
-    from paste configurations."""
-
-    def load_app(self, name):
-        return BillingApplication()
+    @classmethod
+    def factory(cls, global_config, **local_config):
+        """Simple paste factory, :class:`nova.wsgi.Router` doesn't have one"""
+        return cls()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Nova Billing
@@ -33,6 +33,7 @@ if os.path.exists(os.path.join(possible_topdir, "nova", "__init__.py")):
 
 
 from nova import flags
+from nova import wsgi
 from nova import log as logging
 from nova import service
 from nova import utils
@@ -47,6 +48,6 @@ if __name__ == '__main__':
     logging.setup()
 #    utils.monkey_patch()
     db_api.configure_backend()
-    rest_server = service.WSGIService("billing", loader=rest.Loader())
+    rest_server = service.WSGIService("billing", loader=wsgi.Loader(config_path=flags.FLAGS.billing_api_paste_config))
     service.serve(rest_server, amqp.Service())
     service.wait()

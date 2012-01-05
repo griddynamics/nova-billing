@@ -17,7 +17,7 @@ Source0:          %{name}-%{version}.tar.gz
 BuildRoot:        %{_tmppath}/%{name}-%{version}-build
 BuildRequires:    python-devel python-setuptools make
 BuildArch:        noarch
-Requires:         python-nova python-keystoneclient python-glance
+Requires:         python-nova python-keystoneclient python-glance openstack-keystone
 Requires:         start-stop-daemon
 
 %description
@@ -52,6 +52,8 @@ Documentation and examples for %{name}.
 export PYTHONPATH=%{buildroot}%{python_sitelib}
 make -C doc html
 install -p -D -m 755 redhat/nova-billing.init %{buildroot}%{_initrddir}/%{name}
+mkdir -p %{buildroot}/etc
+cp -a etc/nova-billing %{buildroot}/etc
 
 %clean
 %__rm -rf %{buildroot}
@@ -76,6 +78,7 @@ fi
 %{_initrddir}/*
 %{python_sitelib}/%{mod_name}*
 %{_usr}/bin/*
+%config(noreplace) /etc/nova-billing
 
 %files doc
 %defattr(-,root,root,-)
