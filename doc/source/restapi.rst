@@ -8,41 +8,29 @@ Nova Billing daemon supports the following forms of requests.
 
 1. ``GET /`` - report on available URLs and application name and version.
 
-2. ``GET /projects`` and ``GET /projects-all`` - statistics for all
-   projects.  Time period should be specified with ``period_start`` 
-   and ``period_end`` request parameters. If they are omitted, current month is assumed.
+2. ``GET /projects`` - statistics for all projects if user has role Admin,
+   otherwise statistics for token's project will be returned.
 
 3. ``GET /projects/{project}`` - statistics for requested
-   ``{project}``. Time period is determined as described in previous item.
+   ``{project}``.
 
-4. ``GET /projects-all/{time_period}`` - statistics for all
-   projects on requested ``{time_period}`` (see below).
-
-5. ``GET /projects/{project}/{time_period}`` - statistics for requested
-   ``{project}`` on requested ``{time_period}`` (see below).
+The last two forms require ``X-Auth-Token`` header to be set to a valid token value.
 
 ``{project}`` is a name of a project. It is not a project ID.
 
-``{time_period}`` has three forms.
+Time period for statistics can be specified in two forms.
 
-#. A year: ``GET /projects/{project}/{year}`` and ``GET /projects-all/{year}``.
-#. A month: ``GET /projects/{project}/{year}/{month}`` and ``GET /projects-all/{year}/{month}``.
-#. A day: ``GET /projects/{project}/{year}/{month}/{day}`` and ``GET /projects-all/{year}/{month}/{day}``.
+1. Start and end are given explicitly with ``period_start`` 
+   and ``period_end`` request parameters.
 
-``{time_period}`` components must follow the following rules.
+2. ``time_period`` request parameter is used. It can be a year 
+   (specified as ``year``), a month (``year-month``), or a day
+   (``year-month-day``). All components are integers. Month and
+   day numbers start with 1.
 
-1. ``{year}`` is an integer. It must contain exactly four decimal digits.
-
-2. ``{month}`` is an integer between 1 (January) and 12 (December).
-
-3. ``{day}`` is an integer between 1 and the number of days in the given
-   month and year.
-
-4. Both ``{month}`` and ``{day}`` must contain exactly 1 or 2 decimal digits,
-   and the leading zero can be omitted.
+If period is omitted, statistics will be for current month.
 
 Date and time always is UTC in order to avoid problems with timezones and daylight saving time.
-So, ``{time_period}`` must be in UTC, and current month is also UTC.
 
 An additional request parameter ``include`` is used to specify what statistics should be returned.
 This parameter is one or two comma-separated items from the following list:
@@ -81,21 +69,24 @@ For ``GET /`` request, report has the following schema:
                 "type": "string", 
                 "description": "Application version"
             }, 
-            "urls": {
-                "type": "object", 
-                "description": "Available URLs", 
-                "properties": {
-                    "projects-all": {
-                        "required": true, 
-                        "type": "string", 
-                        "description": "projects-all URL"
-                    }, 
-                    "projects": {
-                        "required": true, 
-                        "type": "string", 
-                        "description": "projects URL"
+            "links": {
+                "items": {
+                    "type": "object", 
+                    "description": "Available URL"
+                    "properties": {
+                        "href": {
+                            "required": true, 
+                            "type": "string"
+                        }, 
+                        "rel": {
+                            "required": true, 
+                            "type": "string" 
+                        }
                     }
-                }
+                }, 
+                "required": false, 
+                "type": "array", 
+                "description": "Available URLs"
             }
         }
     }
@@ -128,19 +119,9 @@ For request on statistics, report has the following schema:
                 "required": false, 
                 "type": "array", 
                 "description": "Statistics for all projects"
-            }, 
-            "project": {
-                "required": false, 
-                "type": "object", 
-                "description": "Project statistics"
             }
         }
     }
-
-``project`` key is available if a particular project is requested (i.e.,
-``GET /projects/{project}/{time_period}`` or ``GET /projects/{project}``).
-Otherwise, ``projects`` key is available (``GET /projects``, 
-``GET /projects-all``, and ``GET /projects-all/{time_period}`` requests).
 
 Project statistics object has the following schema:
 
@@ -286,25 +267,29 @@ If a property of resource usage object is omitted, it means that its value is ze
 Examples
 --------
 
+In these examples, ``999888777666`` is assumed to be a valid Admin's token.
+
 Instances statistics for ``systenant`` project on 2011 year:
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects/systenant/2011" | python -mjson.tool
+    $ curl "http://localhost:8787/projects/systenant?time_period=2011" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-01-01T00:00:00Z", 
-        "project": {
-            "instances": {
-                "count": 7, 
-                "usage": {
-                    "local_gb_h": 68495.83333333333, 
-                    "memory_mb_h": 7013973.333333333, 
-                    "vcpus_h": 3424.7916666666665
-                }
-            }, 
-            "name": "systenant", 
-            "url": "http://127.0.0.1:8787/projects/systenant"
+        "projects": {
+            "systenant": {
+                "instances": {
+                    "count": 7, 
+                    "usage": {
+                        "local_gb_h": 68495.83333333333, 
+                        "memory_mb_h": 7013973.333333333, 
+                        "vcpus_h": 3424.7916666666665
+                    }
+                }, 
+                "name": "systenant", 
+                "url": "http://127.0.0.1:8787/projects/systenant"
+            }
         }
     }
 
@@ -313,7 +298,7 @@ Instances statistics for all projects on December, 2011:
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects-all/2011/12" | python -mjson.tool
+    $ curl "http://localhost:8787/projects?time_period=2011-12" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-12-01T00:00:00Z", 
@@ -345,60 +330,62 @@ Images statistics (long form) for projects tenant2 on from 2011-01-01 00:00:00 t
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects/tenant2?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" | python -mjson.tool
+    $ curl "http://localhost:8787/projects/tenant2?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-01-01T01:00:00Z", 
-        "project": {
-            "images": {
-                "count": 4, 
-                "items": [
-                    {
-                        "created_at": "2011-12-28T16:25:21.852159Z", 
-                        "destroyed_at": null, 
-                        "id": 1, 
-                        "lifetime_sec": 286478, 
-                        "name": "SL61_ramdisk", 
-                        "usage": {
-                            "local_gb_h": 0.0011111111111111111
+        "projects": {
+            "tenant2": {
+                "images": {
+                    "count": 4, 
+                    "items": [
+                        {
+                            "created_at": "2011-12-28T16:25:21.852159Z", 
+                            "destroyed_at": null, 
+                            "id": 1, 
+                            "lifetime_sec": 286478, 
+                            "name": "SL61_ramdisk", 
+                            "usage": {
+                                "local_gb_h": 0.0011111111111111111
+                            }
+                        }, 
+                        {
+                            "created_at": "2011-12-28T16:25:22.615385Z", 
+                            "destroyed_at": null, 
+                            "id": 2, 
+                            "lifetime_sec": 286477, 
+                            "name": "SL61_kernel", 
+                            "usage": {
+                                "local_gb_h": 0.2875
+                            }
+                        }, 
+                        {
+                            "created_at": "2011-12-28T16:25:23.376856Z", 
+                            "destroyed_at": null, 
+                            "id": 3, 
+                            "lifetime_sec": 286476, 
+                            "name": "SL61", 
+                            "usage": {
+                                "local_gb_h": 16.071666666666665
+                            }
+                        }, 
+                        {
+                            "created_at": "2011-12-29T08:04:07.497591Z", 
+                            "destroyed_at": null, 
+                            "id": 4, 
+                            "lifetime_sec": 230152, 
+                            "name": "ramdisk2", 
+                            "usage": {
+                                "local_gb_h": 0.0008333333333333334
+                            }
                         }
-                    }, 
-                    {
-                        "created_at": "2011-12-28T16:25:22.615385Z", 
-                        "destroyed_at": null, 
-                        "id": 2, 
-                        "lifetime_sec": 286477, 
-                        "name": "SL61_kernel", 
-                        "usage": {
-                            "local_gb_h": 0.2875
-                        }
-                    }, 
-                    {
-                        "created_at": "2011-12-28T16:25:23.376856Z", 
-                        "destroyed_at": null, 
-                        "id": 3, 
-                        "lifetime_sec": 286476, 
-                        "name": "SL61", 
-                        "usage": {
-                            "local_gb_h": 16.071666666666665
-                        }
-                    }, 
-                    {
-                        "created_at": "2011-12-29T08:04:07.497591Z", 
-                        "destroyed_at": null, 
-                        "id": 4, 
-                        "lifetime_sec": 230152, 
-                        "name": "ramdisk2", 
-                        "usage": {
-                            "local_gb_h": 0.0008333333333333334
-                        }
+                    ], 
+                    "usage": {
+                        "local_gb_h": 16.36111111111111
                     }
-                ], 
-                "usage": {
-                    "local_gb_h": 16.36111111111111
-                }
-            }, 
-            "name": "tenant2", 
-            "url": "http://127.0.0.1:8787/projects/tenant2"
+                }, 
+                "name": "tenant2", 
+                "url": "http://127.0.0.1:8787/projects/tenant2"
+            }
         }
     }
