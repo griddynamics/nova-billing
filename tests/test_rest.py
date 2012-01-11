@@ -168,4 +168,7 @@ class TestCase(tests.TestCase):
                     request["request"],
                     headers=request["headers"],).\
                     get_response(rest.BillingApplication())
-            self.assertEqual(result.status_int, request["status_int"])
+            self.assertEqual(
+                    result.status_int, request["status_int"],
+                    "Expected %s but got %s for %s" %
+                    (request["status_int"], result.status_int, request["request"]))

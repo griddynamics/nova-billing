@@ -47,14 +47,49 @@ flags.DEFINE_integer("billing_listen_port", 8787, "Billing API port")
 nova_projects = nova_utils.NovaProjects()
 
 
+class VersionFilter(object):
+    """
+    Filter returning version for "/" request
+    """
+    def __init__(self, application):
+        self.application = application
+
+    @webob.dec.wsgify
+    def __call__(self, req):
+        if req.environ.get("PATH_INFO", "/") == "/":
+            ans_dict = {
+                "version": version_string(),
+                "application": "nova-billing",
+                "links": [
+                    {
+                        "href": "http://%s:%s/projects" %
+                            (req.environ["SERVER_NAME"],
+                             req.environ["SERVER_PORT"]),
+                        "rel": "self",
+                    },
+                ],
+            }
+            return webob.Response(json.dumps(ans_dict),
+                         content_type='application/json')
+
+        return req.get_response(self.application)
+
+    @classmethod
+    def factory(cls, global_config, **local_config):
+        def filter(app):
+            return cls(app)
+
+        return filter
+
+
 class BillingController(object):
     """
     WSGI application that reads routing information supplied by ``RoutesMiddleware``
     and returns a report.
     """
 
-    def get_period(self, req, arg_dict):
-        if not arg_dict.has_key("year"):
+    def get_period(self, req):
+        if not req.GET.has_key("time_period"):
             if "period_start" in req.GET:
                 period_start = utils.str_to_datetime(req.GET["period_start"])
                 try:
@@ -70,29 +105,25 @@ class BillingController(object):
                 return period_start, period_end
             else:
                 now = utils.now()
-                year = now.year
-                month = now.month
-                day = 1
-                duration = "month"
+                date_args = (now.year, now.month, 1)
+                date_incr = 1
         else:
-            year = int(arg_dict["year"])
-            duration = "year"
-            try:
-                month = int(arg_dict["month"])
-                duration = "month"
-            except KeyError:
-                month = 1
-            try:
-                day = int(arg_dict["day"])
-                duration = "day"
-            except KeyError:
-                day = 1
+            time_period_splitted = req.GET["time_period"].split("-", 2)
+            date_args = [1, 1, 1]
+            for i in xrange(min(2, len(time_period_splitted))):
+                try:
+                    date_args[i] = int(time_period_splitted[i])
+                except ValueError:
+                    raise webob.exc.HTTPBadRequest(
+                        explanation="invalid time_period `%s'" % req.GET["time_period"])
+            date_incr = len(time_period_splitted) - 1
 
-        period_start = datetime.datetime(year=year, month=month, day=day)
-        if duration.startswith("d"):
+        period_start = datetime.datetime(*date_args)
+        if date_incr == 2:
             period_end = period_start + datetime.timedelta(days=1)
         else:
-            if duration.startswith("m"):
+            year, month, day = date_args
+            if date_incr == 1:
                 month += 1
                 if month > 12:
                     month = 1
@@ -109,24 +140,6 @@ class BillingController(object):
         """
         arg_dict = req.environ['wsgiorg.routing_args'][1]
 
-        if arg_dict.get("action", None) == "index":
-            ans_dict = {
-                "version": version_string(),
-                "application": "nova-billing",
-                "urls": {
-                    "projects":
-                        "http://%s:%s/projects" %
-                        (req.environ["SERVER_NAME"],
-                         req.environ["SERVER_PORT"]),
-                    "projects-all":
-                        "http://%s:%s/projects-all" %
-                        (req.environ["SERVER_NAME"],
-                         req.environ["SERVER_PORT"]),
-                }
-            }
-            return webob.Response(json.dumps(ans_dict),
-                         content_type='application/json')
-
         STATISTICS_NONE = 0
         STATISTICS_SHORT = 1
         STATISTICS_LONG = 2
@@ -135,13 +148,16 @@ class BillingController(object):
         roles = [r.strip()
                  for r in req.headers.get('X_ROLE', '').split(',')]
         is_admin = "Admin" in roles
-        if not is_admin and (not queried_project or
-                req.headers.get('X_TENANT_NAME', '') != queried_project):
-            raise webob.exc.HTTPUnauthorized()
+        if not is_admin:
+            if queried_project:
+                if req.headers.get('X_TENANT_NAME', '') != queried_project:
+                    raise webob.exc.HTTPUnauthorized()
+            else:
+                queried_project = req.headers.get('X_TENANT_NAME', '')
 
         auth_token = req.headers.get('X_AUTH_TOKEN', '')
 
-        period_start, period_end = self.get_period(req, arg_dict)
+        period_start, period_end = self.get_period(req)
         statistics = {"instances": STATISTICS_NONE,
                       "images": STATISTICS_NONE}
         try:
@@ -234,12 +250,9 @@ class BillingController(object):
 
         ans_dict = {
             "period_start": utils.datetime_to_str(period_start),
-            "period_end": utils.datetime_to_str(period_end)
+            "period_end": utils.datetime_to_str(period_end),
+            "projects": projects,
         }
-        if queried_project:
-            ans_dict["project"] = projects[queried_project]
-        else:
-            ans_dict["projects"] = projects
         return webob.Response(json.dumps(ans_dict),
                               content_type='application/json')
 
@@ -251,34 +264,10 @@ class BillingApplication(base_wsgi.Router):
 
     def __init__(self):
         mapper = routes.Mapper()
-        requirements = {"year": r"\d\d\d\d", "month": r"\d{1,2}", "day": r"\d{1,2}"}
-        mapper.connect(None, "/projects/{project}/{year}/{month}/{day}",
-                        controller=BillingController(),
-                        requirements=requirements)
-        mapper.connect(None, "/projects/{project}/{year}/{month}",
-                        controller=BillingController(),
-                        requirements=requirements)
-        mapper.connect(None, "/projects/{project}/{year}",
-                        controller=BillingController(),
-                        requirements=requirements)
         mapper.connect(None, "/projects/{project}",
-                        controller=BillingController())
+                       controller=BillingController())
         mapper.connect(None, "/projects",
-                        controller=BillingController())
-        mapper.connect(None, "/projects-all/{year}/{month}/{day}",
-                        controller=BillingController(),
-                        requirements=requirements)
-        mapper.connect(None, "/projects-all/{year}/{month}",
-                        controller=BillingController(),
-                        requirements=requirements)
-        mapper.connect(None, "/projects-all/{year}",
-                        controller=BillingController(),
-                        requirements=requirements)
-        mapper.connect(None, "/projects-all",
-                        controller=BillingController())
-        mapper.connect(None, "/",
-                        controller=BillingController(),
-                        action="index")
+                       controller=BillingController())
         super(BillingApplication, self).__init__(mapper)
 
     @classmethod

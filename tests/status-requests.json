@@ -5,8 +5,8 @@
             "X_ROLE": "Member", 
             "X_TENANT": "1"
         }, 
-        "status_int": 401, 
-        "request": "/projects-all"
+        "status_int": 200, 
+        "request": "/projects"
     }, 
     {
         "headers": {
