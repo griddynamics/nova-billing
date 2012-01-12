@@ -8,19 +8,6 @@ Welcome to nova-billing's documentation!
 
 Contents:
 
-.. toctree::
-   :maxdepth: 2
-
-
-Developer Docs
---------------
-
-.. toctree::
-   :maxdepth: 1
-
-   devref/index
-
-
 User Docs
 ---------
 .. toctree::
@@ -29,12 +16,3 @@ User Docs
    quickstart
    restapi
    config
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
