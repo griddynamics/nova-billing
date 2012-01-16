@@ -76,6 +76,8 @@ def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant
     images = client.get_images_detailed(filters={"is_public": "none"})
     if tenant_id:
         images = [image for image in images if image["owner"] == tenant_id]
+    else:
+        images = [image for image in images if image["owner"] is not None]
     report_by_id = {}
     now = utils.now()
     for image in images:
