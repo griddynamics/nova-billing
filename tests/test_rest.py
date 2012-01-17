@@ -45,7 +45,7 @@ class FakeDbApi(object):
     @staticmethod
     def instances_on_interval(period_start, period_stop, project_id=None):
         total_statistics = {
-            "systenant": {
+            "1": {
                 12: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
@@ -57,7 +57,7 @@ class FakeDbApi(object):
                     "usage": {"local_gb": 3600 * 67, "memory_mb": 3600 * 10, "vcpus": 3600 * 41},
                 },
             },
-            "tenant12": {
+            "12": {
                 54: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
@@ -90,7 +90,7 @@ class FakeGlanceApi(object):
     @staticmethod
     def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant_id=None):
         total_statistics = {
-            "systenant": {
+            "1": {
                 21: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
@@ -104,7 +104,7 @@ class FakeGlanceApi(object):
                     "usage": {"local_gb": 3600 * 67},
                 },
             },
-            "tenant12": {
+            "12": {
                 94: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
@@ -138,12 +138,10 @@ class TestCase(tests.TestCase):
             self.stubs.Set(glance_utils, func_name, getattr(fake_glance_api, func_name))
 
         self.stubs.Set(utils, "now", lambda: datetime.datetime(2011, 1, 1))
-        self.stubs.Set(nova_utils.NovaProjects, "get_projects",
-                       lambda self: ["systenant", "tenant12"])
         from keystoneclient.v2_0.tenants import Tenant
         self.stubs.Set(keystone_utils.KeystoneTenants, "get_tenants",
-                       lambda self, token: [Tenant(None, {"name": "systenant", "id": 1}),
-                                       Tenant(None, {"name": "tenant12", "id": 2})])
+                       lambda self, token: [Tenant(None, {"id": "1"}),
+                                            Tenant(None, {"id": "12"})])
 
         def json_load_from_file(filename):
             json_file = open(
@@ -157,8 +155,7 @@ class TestCase(tests.TestCase):
             result = webob.Request.blank(
                     request,
                     headers={"X_ROLE": "Admin",
-                             "X_TENANT": "1",
-                             "X_TENANT_NAME": "systenant"}).\
+                             "X_TENANT_ID": "1"}).\
                     get_response(rest.BillingApplication())
             self.assertEqual(result.status_int, 200)
             self.assertEqual(json.loads(result.body), result_body)

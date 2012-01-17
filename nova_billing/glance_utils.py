@@ -34,7 +34,7 @@ from nova_billing import keystone_utils
 FLAGS = flags.FLAGS
 
 
-def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant_id=None):
+def images_on_interval(period_start, period_stop, auth_tok, tenant_id=None):
     """
     Retrieve images statistics for the given interval [``period_start``, ``period_stop``]. 
     ``tenant_id=None`` means all projects.
@@ -44,7 +44,7 @@ def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant
     .. code-block:: python
 
         {
-            "systenant": {
+            "1": {
                 12: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
@@ -58,7 +58,7 @@ def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant
                     "usage": {"local_gb": 2.5},
                 },
             },
-            "tenant12": {
+            "2": {
                 24: {
                     "created_at": datetime.datetime(2011, 1, 1),
                     "destroyed_at": datetime.datetime(2011, 1, 2),
@@ -104,4 +104,4 @@ def images_on_interval(period_start, period_stop, tenant_by_id, auth_tok, tenant
             "usage": {"local_gb": image["size"] * lifetime / 2 ** 30}
         }
 
-    return dict([(tenant_by_id[key], value) for key, value in report_by_id.iteritems()])
+    return report_by_id

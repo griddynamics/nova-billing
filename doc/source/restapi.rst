@@ -11,12 +11,10 @@ Nova Billing daemon supports the following forms of requests.
 2. ``GET /projects`` - statistics for all projects if user has role Admin,
    otherwise statistics for token's project will be returned.
 
-3. ``GET /projects/{project}`` - statistics for requested
-   ``{project}``.
+3. ``GET /projects/{project_id}`` - statistics for requested
+   ``{project_id}``.
 
 The last two forms require ``X-Auth-Token`` header to be set to a valid token value.
-
-``{project}`` is a name of a project. It is not a project ID.
 
 Time period for statistics can be specified in two forms.
 
@@ -116,7 +114,7 @@ For request on statistics, report has the following schema:
                     "type": "object", 
                     "description": "Project statistics"
                 }, 
-                "required": false, 
+                "required": true, 
                 "type": "array", 
                 "description": "Statistics for all projects"
             }
@@ -131,10 +129,10 @@ Project statistics object has the following schema:
         "type": "object", 
         "description": "Project statistics", 
         "properties": {
-            "name": {
+            "id": {
                 "required": true, 
                 "type": "string", 
-                "description": "Project name"
+                "description": "Project ID"
             }, 
             "url": {
                 "required": true, 
@@ -269,16 +267,16 @@ Examples
 
 In these examples, ``999888777666`` is assumed to be a valid Admin's token.
 
-Instances statistics for ``systenant`` project on 2011 year:
+Instances statistics for ``1`` project on 2011 year:
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects/systenant?time_period=2011" -H "X-Auth-Token: 999888777666" | python -mjson.tool
+    $ curl "http://localhost:8787/projects/1?time_period=2011" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-01-01T00:00:00Z", 
-        "projects": {
-            "systenant": {
+        "projects": [
+            {
                 "instances": {
                     "count": 7, 
                     "usage": {
@@ -287,10 +285,10 @@ Instances statistics for ``systenant`` project on 2011 year:
                         "vcpus_h": 3424.7916666666665
                     }
                 }, 
-                "name": "systenant", 
-                "url": "http://127.0.0.1:8787/projects/systenant"
+                "id": "1", 
+                "url": "http://127.0.0.1:8787/projects/1"
             }
-        }
+        ]
     }
 
 
@@ -302,8 +300,8 @@ Instances statistics for all projects on December, 2011:
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-12-01T00:00:00Z", 
-        "projects": {
-            "systenant": {
+        "projects": [
+            {
                 "instances": {
                     "count": 7, 
                     "usage": {
@@ -312,30 +310,30 @@ Instances statistics for all projects on December, 2011:
                         "vcpus_h": 3424.7916666666665
                     }
                 }, 
-                "name": "systenant", 
-                "url": "http://127.0.0.1:8787/projects/systenant"
+                "id": "1", 
+                "url": "http://127.0.0.1:8787/projects/1"
             }, 
-            "tenant2": {
+            {
                 "instances": {
                     "count": 0, 
                     "usage": {}
                 }, 
-                "name": "tenant2", 
-                "url": "http://127.0.0.1:8787/projects/tenant2"
+                "id": "2", 
+                "url": "http://127.0.0.1:8787/projects/2"
             }
-        }
+        ]
     }
 
-Images statistics (long form) for projects tenant2 on from 2011-01-01 00:00:00 till 2012-01-01 01:00:00:
+Images statistics (long form) for project 2 on from 2011-01-01 00:00:00 till 2012-01-01 01:00:00:
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects/tenant2?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" -H "X-Auth-Token: 999888777666" | python -mjson.tool
+    $ curl "http://localhost:8787/projects/2?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
         "period_end": "2012-01-01T00:00:00Z", 
         "period_start": "2011-01-01T01:00:00Z", 
-        "projects": {
-            "tenant2": {
+        "projects": [
+            {
                 "images": {
                     "count": 4, 
                     "items": [
@@ -384,8 +382,8 @@ Images statistics (long form) for projects tenant2 on from 2011-01-01 00:00:00 t
                         "local_gb_h": 16.36111111111111
                     }
                 }, 
-                "name": "tenant2", 
-                "url": "http://127.0.0.1:8787/projects/tenant2"
+                "id": "2", 
+                "url": "http://127.0.0.1:8787/projects/2"
             }
-        }
+        ]
     }

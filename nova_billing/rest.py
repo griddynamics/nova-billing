@@ -33,7 +33,6 @@ from nova.api.openstack import wsgi as os_wsgi
 from nova_billing.db import api as db_api
 from nova_billing import utils
 from nova_billing import glance_utils
-from nova_billing import nova_utils
 from nova_billing import keystone_utils
 from nova_billing.version import version_string
 
@@ -42,9 +41,6 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string("billing_listen", "0.0.0.0",
                     "IP address for Billing API to listen")
 flags.DEFINE_integer("billing_listen_port", 8787, "Billing API port")
-
-
-nova_projects = nova_utils.NovaProjects()
 
 
 class VersionFilter(object):
@@ -144,16 +140,16 @@ class BillingController(object):
         STATISTICS_SHORT = 1
         STATISTICS_LONG = 2
 
-        queried_project = arg_dict.get("project", None)
+        queried_tenant_id = arg_dict.get("project_id", None)
         roles = [r.strip()
                  for r in req.headers.get('X_ROLE', '').split(',')]
         is_admin = "Admin" in roles
         if not is_admin:
-            if queried_project:
-                if req.headers.get('X_TENANT_NAME', '') != queried_project:
+            if queried_tenant_id:
+                if req.headers.get('X_TENANT_ID', '') != queried_tenant_id:
                     raise webob.exc.HTTPUnauthorized()
             else:
-                queried_project = req.headers.get('X_TENANT_NAME', '')
+                queried_tenant_id = req.headers.get('X_TENANT_ID', '-1')
 
         auth_token = req.headers.get('X_AUTH_TOKEN', '')
 
@@ -165,7 +161,7 @@ class BillingController(object):
         except KeyError:
             statistics["instances"] = (STATISTICS_LONG
                 if period_end - period_start <= datetime.timedelta(days=31)
-                    and queried_project
+                    and queried_tenant_id
                 else STATISTICS_SHORT)
         else:
             include = include.strip(",")
@@ -177,32 +173,20 @@ class BillingController(object):
 
         if is_admin:
             tenants = keystone_utils.KeystoneTenants().\
-                get_tenants(auth_token)
-            tenant_by_id = dict([(tenant.id, tenant.name) for tenant in tenants])
-            reported_projects = (set(nova_projects.get_projects())
-                            | set([tenant.name for tenant in tenants]))
-
-            if queried_project:
-                if queried_project in reported_projects:
-                    reported_projects = set([queried_project])
+                    get_tenants(auth_token)
+            reported_projects = set([tenant.id for tenant in tenants])
+            if queried_tenant_id:
+                if queried_tenant_id in reported_projects:
+                    reported_projects = set([queried_tenant_id])
                 else:
                     raise webob.exc.HTTPNotFound()
-                queried_tenant_id = '-1'
-                for tenant in tenants:
-                    if tenant.name == queried_project:
-                        queried_tenant_id = tenant.id
-                        break
-            else:
-                queried_tenant_id = None
         else:
-            queried_tenant_id = req.headers.get('X_TENANT', '-1')
-            reported_projects = set([queried_project])
-            tenant_by_id = {queried_tenant_id: queried_project}
+            reported_projects = set([queried_tenant_id])
 
         projects = {}
         for project_id in reported_projects:
             projects[project_id] = {
-                "name": project_id,
+                "id": str(project_id),
                 "url": "http://%s:%s/projects/%s" %
                        (req.environ["SERVER_NAME"],
                         req.environ["SERVER_PORT"],
@@ -216,10 +200,10 @@ class BillingController(object):
             if statistics_key == "images":
                 total_statistics = glance_utils.images_on_interval(
                     period_start, period_end,
-                    tenant_by_id, auth_token, queried_tenant_id)
+                    auth_token, queried_tenant_id)
             else:
                 total_statistics = db_api.instances_on_interval(
-                    period_start, period_end, queried_project)
+                    period_start, period_end, queried_tenant_id)
             for project_id in projects:
                 project_statistics = total_statistics.get(project_id, {})
                 project_dict = {
@@ -251,7 +235,7 @@ class BillingController(object):
         ans_dict = {
             "period_start": utils.datetime_to_str(period_start),
             "period_end": utils.datetime_to_str(period_end),
-            "projects": projects,
+            "projects": projects.values(),
         }
         return webob.Response(json.dumps(ans_dict),
                               content_type='application/json')
@@ -264,7 +248,7 @@ class BillingApplication(base_wsgi.Router):
 
     def __init__(self):
         mapper = routes.Mapper()
-        mapper.connect(None, "/projects/{project}",
+        mapper.connect(None, "/projects/{project_id}",
                        controller=BillingController())
         mapper.connect(None, "/projects",
                        controller=BillingController())

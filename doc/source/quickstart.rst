@@ -29,8 +29,8 @@ Its output should look like this:
     {
         "period_end": "2012-02-01T00:00:00Z", 
         "period_start": "2012-01-01T00:00:00Z", 
-        "projects": {
-            "systenant": {
+        "projects": [
+            {
                 "instances": {
                     "count": 7, 
                     "usage": {
@@ -39,8 +39,8 @@ Its output should look like this:
                         "vcpus_h": 3424.7916666666665
                     }
                 }, 
-                "name": "systenant", 
+                "id": "1", 
                 "url": "http://127.0.0.1:8787/projects/systenant"
             }
-        }
+        ]
     }
