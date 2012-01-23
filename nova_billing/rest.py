@@ -201,7 +201,9 @@ class BillingController(object):
             if not statistics[statistics_key]:
                 continue
             show_items = statistics[statistics_key] == STATISTICS_LONG
-            if statistics_key == "images":
+            if period_start > utils.now():
+                total_statistics = {}
+            elif statistics_key == "images":
                 total_statistics = glance_utils.images_on_interval(
                     period_start, period_end,
                     auth_token, queried_tenant_id)
