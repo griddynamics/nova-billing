@@ -134,6 +134,11 @@ Project statistics object has the following schema:
                 "type": "string", 
                 "description": "Project ID"
             }, 
+            "name": {
+                "required": true, 
+                "type": "string", 
+                "description": "Project name"
+            },
             "url": {
                 "required": true, 
                 "type": "string", 
@@ -286,6 +291,7 @@ Instances statistics for ``1`` project on 2011 year:
                     }
                 }, 
                 "id": "1", 
+                "name": "systenant",
                 "url": "http://127.0.0.1:8787/projects/1"
             }
         ]
@@ -311,6 +317,7 @@ Instances statistics for all projects on December, 2011:
                     }
                 }, 
                 "id": "1", 
+                "name": "systenant",
                 "url": "http://127.0.0.1:8787/projects/1"
             }, 
             {
@@ -319,6 +326,7 @@ Instances statistics for all projects on December, 2011:
                     "usage": {}
                 }, 
                 "id": "2", 
+                "name": "tenant2",
                 "url": "http://127.0.0.1:8787/projects/2"
             }
         ]
@@ -383,6 +391,7 @@ Images statistics (long form) for project 2 on from 2011-01-01 00:00:00 till 201
                     }
                 }, 
                 "id": "2", 
+                "name": "tenant2",
                 "url": "http://127.0.0.1:8787/projects/2"
             }
         ]

@@ -140,8 +140,8 @@ class TestCase(tests.TestCase):
         self.stubs.Set(utils, "now", lambda: datetime.datetime(2011, 1, 1))
         from keystoneclient.v2_0.tenants import Tenant
         self.stubs.Set(keystone_utils.KeystoneTenants, "get_tenants",
-                       lambda self, token: [Tenant(None, {"id": "1"}),
-                                            Tenant(None, {"id": "12"})])
+                       lambda self, token: [Tenant(None, {"id": "1", "name": "systenant"}),
+                                            Tenant(None, {"id": "12", "name": "tenant12"})])
 
         def json_load_from_file(filename):
             json_file = open(

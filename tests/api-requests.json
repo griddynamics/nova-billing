@@ -12,7 +12,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }, 
             {
                 "url": "http://localhost:80/projects/12", 
@@ -24,7 +25,8 @@
                         "memory_mb_h": 165.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -62,7 +64,8 @@
                         "local_gb_h": 79.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -106,7 +109,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -124,7 +128,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }, 
             {
                 "url": "http://localhost:80/projects/12", 
@@ -136,7 +141,8 @@
                         "memory_mb_h": 165.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -154,7 +160,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }, 
             {
                 "url": "http://localhost:80/projects/12", 
@@ -166,7 +173,8 @@
                         "memory_mb_h": 165.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2011-02-01T00:00:00Z"
@@ -184,7 +192,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -228,7 +237,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }
         ], 
         "period_end": "2011-02-01T00:00:00Z"
@@ -260,7 +270,8 @@
                         "memory_mb_h": 66.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2011-01-02T00:00:00Z"
@@ -278,7 +289,8 @@
                         "memory_mb_h": 45.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }, 
             {
                 "url": "http://localhost:80/projects/12", 
@@ -290,7 +302,8 @@
                         "memory_mb_h": 66.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2011-01-02T00:00:00Z"
@@ -306,7 +319,8 @@
                         "local_gb_h": 79.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -350,7 +364,8 @@
                         "memory_mb_h": 165.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2011-02-01T00:00:00Z"
@@ -368,7 +383,8 @@
                         "memory_mb_h": 165.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
@@ -386,7 +402,8 @@
                         "memory_mb_h": 55.0
                     }
                 }, 
-                "id": "1"
+                "id": "1",
+                "name": "systenant"
             }, 
             {
                 "url": "http://localhost:80/projects/12", 
@@ -398,7 +415,8 @@
                         "memory_mb_h": 165.0
                     }
                 }, 
-                "id": "12"
+                "id": "12",
+                "name": "tenant12"
             }
         ], 
         "period_end": "2011-02-01T00:00:00Z"

@@ -40,6 +40,7 @@ Its output should look like this:
                     }
                 }, 
                 "id": "1", 
+                "name": "systenant",
                 "url": "http://127.0.0.1:8787/projects/systenant"
             }
         ]

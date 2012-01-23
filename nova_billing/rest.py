@@ -175,6 +175,7 @@ class BillingController(object):
             tenants = keystone_utils.KeystoneTenants().\
                     get_tenants(auth_token)
             reported_projects = set([tenant.id for tenant in tenants])
+            tenant_name_by_id = dict([(tenant.id, tenant.name) for tenant in tenants])
             if queried_tenant_id:
                 if queried_tenant_id in reported_projects:
                     reported_projects = set([queried_tenant_id])
@@ -182,11 +183,14 @@ class BillingController(object):
                     raise webob.exc.HTTPNotFound()
         else:
             reported_projects = set([queried_tenant_id])
+            tenant_name_by_id = {queried_tenant_id:
+                                 req.headers.get('X_TENANT_NAME', None)}
 
         projects = {}
         for project_id in reported_projects:
             projects[project_id] = {
                 "id": str(project_id),
+                "name": tenant_name_by_id[project_id],
                 "url": "http://%s:%s/projects/%s" %
                        (req.environ["SERVER_NAME"],
                         req.environ["SERVER_PORT"],
