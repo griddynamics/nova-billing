@@ -79,8 +79,8 @@ def ensure_connection(engine):
         except sqlalchemy.exc.OperationalError:
             if remaining_attempts == 0:
                 raise
-            LOG.warning(_('SQL connection failed (%(connstring)s). '
-                          '%(attempts)d attempts left.'),
+            LOG.warning('SQL connection failed (%(connstring)s). '
+                          '%(attempts)d attempts left.',
                            {'connstring': FLAGS.billing_sql_connection,
                             'attempts': remaining_attempts})
             time.sleep(FLAGS.sql_retry_interval)

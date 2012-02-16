@@ -93,13 +93,13 @@ class Service(object):
             routing_key="compute.#",
             channel=self.channel,
             **options)
-        LOG.debug("created kombu connection: %s" % self.params)
+        LOG.debug("Created kombu connection: %s" % self.params)
 
     def process_message(self, body, message):
         try:
             self.process_event(body, message)
         except KeyError, ex:
-            LOG.exception("cannot handle message")
+            LOG.exception("Cannot handle message")
         message.ack()
 
     def process_event(self, body, message):
@@ -189,8 +189,7 @@ class Service(object):
             except socket.error:
                 pass
             except Exception, e:
-                LOG.exception(_('Failed to consume message from queue: '
-                        '%s' % str(e)))
+                LOG.exception('Failed to consume message from queue: %s' % str(e))
 
     def start(self):
         self.server = eventlet.spawn(self.consume)
