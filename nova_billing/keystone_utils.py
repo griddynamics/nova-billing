@@ -25,7 +25,6 @@ import ConfigParser
 from keystoneclient.v2_0 import client as keystone_client
 
 from nova import flags
-from nova import service
 
 
 FLAGS = flags.FLAGS

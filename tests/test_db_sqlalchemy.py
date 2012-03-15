@@ -56,6 +56,16 @@ class TestCase(tests.TestCase):
     instance_segment = {
         "begin_at": datetime.datetime(2011, 1, 1, 0, 0),
         "segment_type": 0}
+    volume_id = 42
+    volume_info = {
+        "allocated_bytes": 2048,
+        "project_id": "systenant",
+        "volume_id": volume_id
+    }
+    volume_segment = {
+        "begin_at": datetime.datetime(2011, 1, 1, 0, 0),
+        "segment_type": 0
+    }
 
     interval_start = datetime.datetime(2010, 1, 1, 0, 0)
     interval_end = datetime.datetime(2011, 1, 1, 0, 1)
@@ -134,5 +144,72 @@ class TestCase(tests.TestCase):
         instance_segment["instance_info_id"] = instance_info_ref.id
         db_api.instance_segment_create(instance_segment)
         db_api.instance_segment_end(self.instance_id,
+            datetime.datetime(2011, 1, 2, 0, 0))
+
+    def test_volume_info_create(self):
+        volume_info = self.volume_info.copy()
+        volume_info_ref = db_api.volume_info_create(volume_info)
+
+        self.assertTrue(hasattr(volume_info_ref, "id"))
+
+    def test_volume_segment(self):
+        """ Test instance_info_create and instance_segment_end"""
+        volume_info = self.volume_info.copy()
+        volume_segment = self.volume_segment.copy()
+        volume_info_ref = db_api.volume_info_create(volume_info)
+        volume_segment["info_id"] = volume_info_ref.id
+        volume_segment_ref = db_api.volume_segment_create(volume_segment)
+
+        self.assertTrue(hasattr(volume_segment_ref, "id"))
+
+        db_api.volume_segment_end(self.volume_id,
+            datetime.datetime(2011, 1, 2, 0, 0))
+
+    def test_volume_info_get_latest(self):
+        volume_segment = self.volume_segment.copy()
+        volume_info = self.volume_info.copy()
+        volume_info_ref = db_api.volume_info_create(volume_info)
+        volume_segment["info_id"] = volume_info_ref.id
+        db_api.volume_segment_create(volume_segment)
+        db_api.volume_segment_end(self.volume_id,
+            datetime.datetime(2011, 1, 2, 0, 0))
+
+        self.assertEqual(volume_info_ref.id,
+            db_api.volume_info_get_latest(self.volume_id))
+
+        volume_info_ref = db_api.volume_info_create(volume_info)
+        volume_segment["info_id"] = volume_info_ref.id
+        self.assertEqual(volume_info_ref.id,
+            db_api.volume_info_get_latest(self.volume_id))
+
+    def test_volumes_on_interval(self):
+        self.init_volume_segment_data()
+        volumes = db_api.volumes_on_interval(
+            self.interval_start, self.interval_end)
+        self.assertTrue(volumes.has_key("systenant"))
+
+        volume = volumes["systenant"][self.volume_id]
+        self.assertTrue(volume.has_key("created_at"))
+        self.assertTrue(volume.has_key("destroyed_at"))
+        self.assertTrue(volume.has_key("usage"))
+
+        usage_info = volume["usage"]
+        self.assertTrue(usage_info.has_key("allocated_bytes"))
+
+        self.assertEquals(usage_info["allocated_bytes"], 122880)
+
+    def test_volumes_on_interval_by_project(self):
+        self.init_volume_segment_data()
+        volumes = db_api.volumes_on_interval(
+            self.interval_start, self.interval_end, "testtenant")
+        self.assertFalse(volumes.has_key("systenant"))
+
+    def init_volume_segment_data(self):
+        volume_segment = self.volume_segment.copy()
+        volume_info = self.volume_info.copy()
+        volume_info_ref = db_api.volume_info_create(volume_info)
+        volume_segment["info_id"] = volume_info_ref.id
+        db_api.volume_segment_create(volume_segment)
+        db_api.volume_segment_end(self.volume_id,
             datetime.datetime(2011, 1, 2, 0, 0))
 

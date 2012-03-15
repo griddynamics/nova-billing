@@ -20,15 +20,12 @@
 Module for communication with Glance.
 """
 
-import json
-
 from nova import flags
 from nova.image.glance import pick_glance_api_server
 
 from glance import client as glance_client
 
 from nova_billing import utils
-from nova_billing import keystone_utils
 
 
 FLAGS = flags.FLAGS

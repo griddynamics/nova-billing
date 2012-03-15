@@ -43,6 +43,50 @@ import tests
 
 class FakeDbApi(object):
     @staticmethod
+    def volumes_on_interval(period_start, period_stop, project_id = None):
+        total_statistics = {
+            "1": {
+                12: {
+                    "created_at": datetime.datetime(2011, 1, 1),
+                    "destroyed_at": datetime.datetime(2011, 1, 2),
+                    "usage": {"allocated_bytes": 3600 * 12},
+                },
+                14: {
+                    "created_at": datetime.datetime(2011, 1, 4),
+                    "destroyed_at": datetime.datetime(2011, 2, 1),
+                    "usage": {"allocated_bytes": 3600 * 67},
+                },
+            },
+            "12": {
+                54: {
+                    "created_at": datetime.datetime(2011, 1, 1),
+                    "destroyed_at": datetime.datetime(2011, 1, 2),
+                    "usage": {"allocated_bytes": 3600 * 73},
+                },
+                67: {
+                    "created_at": datetime.datetime(2011, 2, 1),
+                    "destroyed_at": datetime.datetime(2011, 2, 3),
+                    "usage": {"allocated_bytes": 3600 * 57},
+                },
+                90: {
+                    "created_at": datetime.datetime(2013, 3, 4),
+                    "destroyed_at": datetime.datetime(2013, 5, 6),
+                    "usage": {"allocated_bytes": 3600 * 20},
+                },
+            }
+        }
+        if project_id:
+            total_statistics = {project_id: total_statistics[project_id]}
+        for project in total_statistics:
+            total_statistics[project] = dict(
+                [(key, value)
+                 for key, value in total_statistics[project].items()
+                 if (value["created_at"] <= period_stop and
+                    value["destroyed_at"] >= period_start)
+                ])
+        return total_statistics
+
+    @staticmethod
     def instances_on_interval(period_start, period_stop, project_id=None):
         total_statistics = {
             "1": {
@@ -77,10 +121,10 @@ class FakeDbApi(object):
         }
         if project_id:
             total_statistics = {project_id: total_statistics[project_id]}
-        for proj in total_statistics:
-            total_statistics[proj] = dict(
+        for project in total_statistics:
+            total_statistics[project] = dict(
                 [(key, value)
-                 for key, value in total_statistics[proj].items()
+                 for key, value in total_statistics[project].items()
                  if (value["created_at"] <= period_stop and
                     value["destroyed_at"] >= period_start)
                 ])
@@ -132,7 +176,7 @@ class TestCase(tests.TestCase):
         """
         fake_db_api = FakeDbApi()
         fake_glance_api = FakeGlanceApi()
-        for func_name in ("instances_on_interval", ):
+        for func_name in ("instances_on_interval", "volumes_on_interval"):
             self.stubs.Set(db_api, func_name, getattr(fake_db_api, func_name))
         for func_name in ("images_on_interval", ):
             self.stubs.Set(glance_utils, func_name, getattr(fake_glance_api, func_name))

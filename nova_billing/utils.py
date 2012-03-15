@@ -24,7 +24,10 @@ Miscellaneous utility functions:
 """
 
 from datetime import datetime
+from nova import log as logging
 from nova_billing import vm_states
+
+LOG = logging.getLogger('nova_billing.utils')
 
 
 def total_seconds(td):
@@ -69,27 +72,6 @@ def datetime_to_str(dt):
     return ("%sZ" % dt.isoformat()) if dt else None
 
 
-used_resources = {
-    vm_states.ACTIVE: ("local_gb", "memory_mb", "vcpus"),
-    vm_states.SUSPENDED: ("local_gb", "memory_mb"),
-    vm_states.PAUSED: ("local_gb", "memory_mb"),
-    vm_states.STOPPED: ("local_gb", ),
-}
-
-
-def usage_add(usage, begin_at, end_at, vm_state, instance_info):
-    """
-    Increment used resource statistics depending on ``vm_state``.
-    Statistics is measured in (resource unit * second).
-    """
-    length = total_seconds(end_at - begin_at)
-    for key in ("local_gb", "memory_mb", "vcpus"):
-        usage[key] = (usage.get(key, 0) +
-            (length * instance_info[key]
-             if key in used_resources.get(vm_state, [])
-             else 0))
-
-
 def usage_to_hours(usage):
     """
     Convert usage measured for seconds to hours.
@@ -103,3 +85,24 @@ def dict_add(a, b):
     """
     for key in b:
         a[key] = a.get(key, 0) + b[key]
+
+
+def bill(segment):
+    """
+    Bills segment based on segment info and segment type
+    """
+    def wrap(callback):
+        def wrapped(body, message):
+            segment_info = callback(body, message)
+            this_moment = now()
+            segment.end(body, this_moment)
+            if segment_info:
+                segment.start(body, segment_info, this_moment)
+            try:
+                routing_key = message.delivery_info["routing_key"]
+            except (AttributeError, KeyError):
+                routing_key = "<unknown>"
+            LOG.debug("routing_key=%s method=%s" % (routing_key, body.get('method', None)))
+            return segment_info
+        return wrapped
+    return wrap

@@ -28,7 +28,6 @@ import datetime
 
 from nova import flags
 from nova import wsgi as base_wsgi
-from nova.api.openstack import wsgi as os_wsgi
 
 from nova_billing.db import api as db_api
 from nova_billing import utils
@@ -155,7 +154,8 @@ class BillingController(object):
 
         period_start, period_end = self.get_period(req)
         statistics = {"instances": STATISTICS_NONE,
-                      "images": STATISTICS_NONE}
+                      "images": STATISTICS_NONE,
+                      "volumes": STATISTICS_NONE}
         try:
             include = req.GET["include"]
         except KeyError:
@@ -165,7 +165,7 @@ class BillingController(object):
                 else STATISTICS_SHORT)
         else:
             include = include.strip(",")
-            for key in "images", "instances":
+            for key in statistics.keys():
                 if (key + "-long") in include:
                     statistics[key] = STATISTICS_LONG
                 elif key in include:
@@ -197,7 +197,7 @@ class BillingController(object):
                         project_id),
             }
         now = utils.now()
-        for statistics_key in "images", "instances":
+        for statistics_key in statistics.keys():
             if not statistics[statistics_key]:
                 continue
             show_items = statistics[statistics_key] == STATISTICS_LONG
@@ -207,6 +207,8 @@ class BillingController(object):
                 total_statistics = glance_utils.images_on_interval(
                     period_start, period_end,
                     auth_token, queried_tenant_id)
+            elif statistics_key == "volumes":
+                total_statistics = db_api.volumes_on_interval(period_start, period_end, queried_tenant_id)
             else:
                 total_statistics = db_api.instances_on_interval(
                     period_start, period_end, queried_tenant_id)

@@ -15,28 +15,18 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
-Module for communication with Nova.
+Possible vm states for instances.
+
+There are integers for string states from ``nova.compute.vm_states``.
+
+The following states are stored in the database:
+
+* ATTACHED
+* DETACHED
+* DELETED
 """
-
-from nova.auth import manager
-from nova import flags
-
-
-FLAGS = flags.FLAGS
-
-
-class NovaProjects(object):
-    projects = []
-
-    def __init__(self):
-        self.manager = manager.AuthManager()
-
-    def get_projects(self):
-        self.projects = []
-        for project in self.manager.get_projects(None):
-            self.projects.append(project.name)
-        return self.projects
-
-
+VOLUME_ATTACHED=0
+VOLUME_DETACHED=1
+VOLUME_DELETED =2
+VOLUME_ERROR = 3

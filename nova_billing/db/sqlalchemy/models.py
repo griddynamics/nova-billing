@@ -20,19 +20,15 @@
 SQLAlchemy models for Nova Billing.
 """
 
-from sqlalchemy.orm import relationship, backref, object_mapper
-from sqlalchemy import Column, Integer, String, schema
-from sqlalchemy import ForeignKey, DateTime, Boolean, Text, Float
+from sqlalchemy.orm import object_mapper
+from sqlalchemy import Column, Integer, String
+from sqlalchemy import ForeignKey, DateTime
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.schema import ForeignKeyConstraint
 
 from nova_billing.db.sqlalchemy.session import get_session, get_engine
 
-from nova import auth
-from nova import exception
 from nova import flags
-from nova import utils
 
 
 FLAGS = flags.FLAGS
@@ -100,6 +96,28 @@ class InstanceInfo(BASE, NovaBillingBase):
     memory_mb = Column(Integer, nullable=True)
     vcpus = Column(Integer, nullable=True)
 
+class VolumeInfo(BASE, NovaBillingBase):
+    __tablename__ = 'billing_volumes_info'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    volume_id = Column(Integer, nullable=False)
+    project_id = Column(String(255), nullable=True)
+    allocated_bytes = Column(Integer, nullable=True)
+
+def make_segment(InfoClass):
+    """
+    Make up some little magic with orange sugar juice
+    """
+    table_name = InfoClass.__tablename__
+    class Segment(BASE, NovaBillingBase):
+        __tablename__ = table_name + '_segment'
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        info_id = Column(Integer, ForeignKey('%s.id' % table_name), nullable=False)
+        segment_type = Column(Integer, nullable=False)
+        begin_at = Column(DateTime, nullable=False)
+        end_at = Column(DateTime, nullable=True)
+    return Segment
+
+VolumeSegment = make_segment(VolumeInfo)
 
 class InstanceSegment(BASE, NovaBillingBase):
     __tablename__ = 'billing_instance_segment'
@@ -112,7 +130,7 @@ class InstanceSegment(BASE, NovaBillingBase):
 
 def register_models():
     """Register Models and create metadata."""
-    models = (InstanceInfo, InstanceSegment)
+    models = (InstanceInfo, InstanceSegment, VolumeInfo, VolumeSegment)
     engine = get_engine()
     for model in models:
         model.metadata.create_all(engine)

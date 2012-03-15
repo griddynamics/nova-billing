@@ -23,24 +23,26 @@ Tests for nova_billing.amqp
 
 import os
 import sys
-import json
 import datetime
-import unittest
-import stubout
 
-import routes
-import webob
-
-from nova_billing import amqp
+import nova_billing.listener
+from nova_billing import interceptors
+from nova_billing import utils
 from nova_billing.db import api as db_api
 from nova_billing.db.sqlalchemy import models
+from nova_billing import novaclient
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tests
 
-
 class FakeDbApi(object):
-    db = { "instance_info": [], "instance_segment": []}
+
+    class FakeInfo(object):
+        def __init__(self, **args):
+            self.__dict__ = args
+
+    def __init__(self):
+        self.db = { "instance_info": [], "instance_segment": [], "volume_info": [], "volume_segment": []}
 
     def instance_info_create(self, values, session=None):
         values["id"] = len(self.db["instance_info"]) + 1
@@ -57,13 +59,47 @@ class FakeDbApi(object):
         entity_ref.update(values)
         return entity_ref
 
-    def instance_info_get_latest(self, instance_id, session=None):
+    def instance_info_get(self, instance_id, session=None):
         for instance_info in reversed(self.db["instance_info"]):
             if instance_info["instance_id"] == instance_id:
-                return instance_info["id"]
+                return self.FakeInfo(**instance_info)
+
+    def instance_info_get_latest(self, instance_id, session=None):
+        return self.instance_info_get(instance_id).id
 
     def instance_segment_end(self, instance_id, end_at, session=None):
         for segment in self.db["instance_segment"]:
+            if not segment["end_at"]:
+                segment["end_at"] = end_at
+
+    def volume_info_create(self, values, session=None):
+        values["id"] = len(self.db["volume_info"]) + 1
+        self.db["volume_info"].append(values)
+        entity_ref = models.VolumeInfo()
+        entity_ref.update(values)
+        return entity_ref
+
+    def volume_segment_create(self, values, session=None):
+        values["id"] = len(self.db["volume_segment"]) + 1
+        values["end_at"] = values.get("end_at", None)
+        self.db["volume_segment"].append(values)
+        entity_ref = models.VolumeSegment()
+        entity_ref.update(values)
+        return entity_ref
+
+    def volume_info_get(self, volume_id, session=None):
+        for volume_info in reversed(self.db["volume_info"]):
+            if volume_info["volume_id"] == volume_id:
+                return self.FakeInfo(**volume_info)
+
+
+    def volume_info_get_latest(self, volume_id, session=None):
+        for volume_info in reversed(self.db["volume_info"]):
+            if volume_info["volume_id"] == volume_id:
+                return volume_info["id"]
+
+    def volume_segment_end(self, volume_id, end_at, session=None):
+        for segment in self.db["volume_segment"]:
             if not segment["end_at"]:
                 segment["end_at"] = end_at
 
@@ -181,6 +217,8 @@ class TestCase(tests.TestCase):
             {"memory_mb": 2048, "project_id": "systenant", "instance_id": 16,
                 "vcpus": 1, "local_gb": 20, "id": 2}
         ],
+        "volume_info": [],
+        "volume_segment": [],
         "instance_segment": [
             {"instance_info_id": 1, "begin_at": datetime.datetime(2011, 1, 2, 0, 0), 
                 "segment_type": 0, "id": 1, "end_at": datetime.datetime(2011, 1, 3, 0, 0)},
@@ -205,31 +243,109 @@ class TestCase(tests.TestCase):
         ]
     }
 
-    def get_event_datetime(self, body):
+    def get_event_datetime(self):
         self.day += 1
         return datetime.datetime(2011, 1, self.day)
 
-    def test_process_event(self):
+    def test_process_event_on_instances(self):
+        self.maxDiff = 5000
         fake_db_api = FakeDbApi()
         for func_name in ("instance_info_create",
                           "instance_segment_create",
                           "instance_info_get_latest",
                           "instance_segment_end"):
             self.stubs.Set(db_api, func_name, getattr(fake_db_api, func_name))
-        service = amqp.Service()
-        self.stubs.Set(service, "get_event_datetime", self.get_event_datetime)
 
-        service.process_event(self.run_instance_body, None)
+        listener = nova_billing.listener.Listener('compute.#', interceptors)
+        self.stubs.Set(utils, "now", self.get_event_datetime)
+        class StubMessage(object):
+            def ack(self):
+                pass
+        stubMessage = StubMessage()
+        listener._process_message(self.run_instance_body, stubMessage)
         for method in ("stop_instance", "start_instance",
                        "pause_instance", "unpause_instance",
                        "suspend_instance", "resume_instance",
                        "terminate_instance"):
             self.anything_instance_body["method"] = method
-            service.process_event(self.anything_instance_body, None)
-        service.process_event(self.run_instance_body, None)
+            listener._process_message(self.anything_instance_body, stubMessage)
+        listener._process_message(self.run_instance_body, stubMessage)
         for method in ("stop_instance", "start_instance"):
             self.anything_instance_body["method"] = method
-            service.process_event(self.anything_instance_body, None)
+            listener._process_message(self.anything_instance_body, stubMessage)
 
         self.stubs.UnsetAll()
         self.assertEqual(fake_db_api.db, self.final_db)
+
+    create_local_volume_body = {
+        "method" : "create_local_volume",
+        "args" : {
+            "instance_id" : 16,
+            "device": "/dev/vdc",
+            "size": 100500,
+            "volume_id" : 14
+        }
+    }
+
+    resize_local_volume_body = {
+        "method" : "resize_local_volume",
+        "args" : {
+            "volume_id": 14,
+            "new_size": 200500,
+        }
+    }
+
+    delete_local_volume_body = {
+        "method" : "delete_local_volume",
+        "args" : {
+            "volume_id": 14
+        }
+    }
+
+    local_volumes_final_db = {
+        'volume_info': [
+                {'project_id': 'systenant', 'allocated_bytes': 100500, 'id': 1, 'volume_id': 14},
+                {'project_id': 'systenant', 'allocated_bytes': 200500, 'id': 2, 'volume_id': 14}
+        ],
+        'instance_info': [
+                {'memory_mb': 2048, 'project_id': 'systenant', 'instance_id': 16, 'vcpus': 1, 'local_gb': 20, 'id': 1}
+        ],
+        'volume_segment': [
+                {'begin_at': datetime.datetime(2011, 1, 3, 0, 0), 'segment_type': 0, 'info_id': 1, 'id': 1,
+                            'end_at': datetime.datetime(2011, 1, 4, 0, 0)},
+                {'begin_at': datetime.datetime(2011, 1, 4, 0, 0), 'segment_type': 2, 'info_id': 1, 'id': 2,
+                 'end_at': datetime.datetime(2011, 1, 5, 0, 0)},
+                {'begin_at': datetime.datetime(2011, 1, 5, 0, 0), 'segment_type': 0, 'info_id': 2, 'id': 3,
+                 'end_at': datetime.datetime(2011, 1, 6, 0, 0)}], 'instance_segment': [
+                {'instance_info_id': 1, 'begin_at': datetime.datetime(2011, 1, 2, 0, 0), 'segment_type': 0, 'id': 1,
+                 'end_at': None}
+        ]
+    }
+
+    def test_process_event_on_local_volumes(self):
+        self.maxDiff = 5000
+        fake_db_api = FakeDbApi()
+        for func_name in ("volume_info_create",
+                          "volume_segment_create",
+                          "volume_info_get_latest",
+                          "volume_info_get",
+                          "volume_segment_end",
+                          "instance_info_create",
+                          "instance_segment_create",
+                          "instance_info_get_latest",
+                          "instance_segment_end",
+                          "instance_info_get"):
+            self.stubs.Set(db_api, func_name, getattr(fake_db_api, func_name))
+        self.stubs.Set(novaclient, "get_nova_client", lambda: None)
+        listener = nova_billing.listener.Listener('compute.#', interceptors)
+        self.stubs.Set(utils, "now", self.get_event_datetime)
+        class StubMessage(object):
+            def ack(self):
+                pass
+        stubMessage = StubMessage()
+        listener._process_message(self.run_instance_body, stubMessage)
+        listener._process_message(self.create_local_volume_body, stubMessage)
+        listener._process_message(self.resize_local_volume_body, stubMessage)
+        listener._process_message(self.delete_local_volume_body, stubMessage)
+        self.stubs.UnsetAll()
+        self.assertEqual(fake_db_api.db, self.local_volumes_final_db)

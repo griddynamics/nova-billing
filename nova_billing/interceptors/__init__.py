@@ -15,28 +15,8 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+__author__ = 'bfilippov'
 
-"""
-Module for communication with Nova.
-"""
-
-from nova.auth import manager
-from nova import flags
-
-
-FLAGS = flags.FLAGS
-
-
-class NovaProjects(object):
-    projects = []
-
-    def __init__(self):
-        self.manager = manager.AuthManager()
-
-    def get_projects(self):
-        self.projects = []
-        for project in self.manager.get_projects(None):
-            self.projects.append(project.name)
-        return self.projects
-
+from instance import *
+from volume import *
 

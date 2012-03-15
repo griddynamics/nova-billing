@@ -114,7 +114,46 @@
             }
         ], 
         "period_end": "2012-01-01T00:00:00Z"
-    }, 
+    },
+    "/projects/1?include=volumes-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
+        "period_start": "2011-01-01T00:00:00Z",
+        "projects": [
+            {
+                "url": "http://localhost:80/projects/1",
+                "volumes": {
+                    "count": 2,
+                    "items": [
+                        {
+                            "name": null,
+                            "created_at": "2011-01-01T00:00:00Z",
+                            "lifetime_sec": 86400,
+                            "usage": {
+                                "allocated_bytes_h": 12.0
+                            },
+                            "destroyed_at": "2011-01-02T00:00:00Z",
+                            "id": 12
+                        },
+                        {
+                            "name": null,
+                            "created_at": "2011-01-04T00:00:00Z",
+                            "lifetime_sec": 2419200,
+                            "usage": {
+                                "allocated_bytes_h": 67.0
+                            },
+                            "destroyed_at": "2011-02-01T00:00:00Z",
+                            "id": 14
+                        }
+                    ],
+                    "usage": {
+                        "allocated_bytes_h": 79.0
+                    }
+                },
+                "id": "1",
+                "name": "systenant"
+            }
+        ],
+        "period_end": "2012-01-01T00:00:00Z"
+    },
     "/projects?period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
         "period_start": "2011-01-01T00:00:00Z", 
         "projects": [
@@ -178,7 +217,35 @@
             }
         ], 
         "period_end": "2011-02-01T00:00:00Z"
-    }, 
+    },
+    "/projects?include=volumes&time_period=2011-01": {
+        "period_start": "2011-01-01T00:00:00Z",
+        "projects": [
+            {
+                "url": "http://localhost:80/projects/1",
+                "volumes": {
+                    "count": 2,
+                    "usage": {
+                        "allocated_bytes_h": 79.0
+                    }
+                },
+                "id": "1",
+                "name": "systenant"
+            },
+            {
+                "url": "http://localhost:80/projects/12",
+                "volumes": {
+                    "count": 2,
+                    "usage": {
+                        "allocated_bytes_h": 130.0
+                    }
+                },
+                "id": "12",
+                "name": "tenant12"
+            }
+        ],
+        "period_end": "2011-02-01T00:00:00Z"
+    },
     "/projects/1?period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T00%3A00%3A00Z": {
         "period_start": "2011-01-01T00:00:00Z", 
         "projects": [
