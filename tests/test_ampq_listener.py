@@ -25,8 +25,8 @@ import os
 import sys
 import datetime
 
-import nova_billing.listener
-from nova_billing import interceptors
+import nova_billing.ampq_listener
+from nova_billing.interceptors import instance, local_volume
 from nova_billing import utils
 from nova_billing.db import api as db_api
 from nova_billing.db.sqlalchemy import models
@@ -256,7 +256,7 @@ class TestCase(tests.TestCase):
                           "instance_segment_end"):
             self.stubs.Set(db_api, func_name, getattr(fake_db_api, func_name))
 
-        listener = nova_billing.listener.Listener('compute.#', interceptors)
+        listener = nova_billing.ampq_listener.Listener('compute.#', instance)
         self.stubs.Set(utils, "now", self.get_event_datetime)
         class StubMessage(object):
             def ack(self):
@@ -337,7 +337,7 @@ class TestCase(tests.TestCase):
                           "instance_info_get"):
             self.stubs.Set(db_api, func_name, getattr(fake_db_api, func_name))
         self.stubs.Set(novaclient, "get_nova_client", lambda: None)
-        listener = nova_billing.listener.Listener('compute.#', interceptors)
+        listener = nova_billing.ampq_listener.Listener('compute.#', instance, local_volume)
         self.stubs.Set(utils, "now", self.get_event_datetime)
         class StubMessage(object):
             def ack(self):

@@ -16,7 +16,19 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'bfilippov'
+import instance
+import volume
 
-from instance import *
-from volume import *
+def make_interceptor(*methods):
+    interceptor = {}
+    for method in methods:
+        interceptor[method.__name__] = method
+    return interceptor
 
+instance = make_interceptor(instance.run_instance, instance.start_instance,
+                            instance.pause_instance, instance.resume_instance,
+                            instance.stop_instance, instance.suspend_instance,
+                            instance.terminate_instance, instance.unpause_instance)
+
+local_volume = make_interceptor(volume.create_local_volume, volume.delete_local_volume,
+                                volume.resize_local_volume)

@@ -25,7 +25,7 @@ Miscellaneous utility functions:
 
 from datetime import datetime
 from nova import log as logging
-from nova_billing import vm_states
+from functools import wraps
 
 LOG = logging.getLogger('nova_billing.utils')
 
@@ -92,6 +92,7 @@ def bill(segment):
     Bills segment based on segment info and segment type
     """
     def wrap(callback):
+        @wraps(callback)
         def wrapped(body, message):
             segment_info = callback(body, message)
             this_moment = now()

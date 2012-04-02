@@ -32,7 +32,7 @@ LOG =  logging.getLogger('nova_billing.listener')
 
 class Listener(object):
 
-    def __init__(self, route, interceptors):
+    def __init__(self, route, *interceptors):
         self.route = route
         self.interceptors = interceptors
         self.watchmen = None
@@ -88,11 +88,15 @@ class Listener(object):
         event information to the database.
         """
         method = body.get("method", None)
-        f = getattr(self.interceptors, method, None)
-        if f is None:
-            raise KeyError(method)
-
-        f(body, message)
+        found = False
+        for interceptor in self.interceptors:
+            f = interceptor.get(method)
+            if f:
+                f(body, message)
+                found = True
+        if not found:
+            raise KeyError("Unable to locate callback "
+                           "for method %s in route %s", method, self.route)
 
     def _listen(self):
         """

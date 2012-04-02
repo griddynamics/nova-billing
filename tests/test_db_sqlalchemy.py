@@ -24,14 +24,7 @@ import datetime
 import os
 import sys
 
-import unittest
-import stubout
-
-import routes
-import webob
-
 from nova import flags
-from nova_billing import amqp
 from nova_billing.db.sqlalchemy import api as db_api
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

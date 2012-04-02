@@ -22,7 +22,7 @@ AMQP listener
 from nova import flags
 from nova import log as logging
 from nova_billing import interceptors
-from nova_billing.listener import Listener
+from nova_billing.ampq_listener import Listener
 
 
 LOG = logging.getLogger("nova_billing.ampq_listeners")
@@ -39,7 +39,7 @@ class Service(object):
     The service listens for ``compute.#`` routing keys.
     """
     def __init__(self):
-        self.listeners = [Listener('compute.#', interceptors)]
+        self.listeners = [Listener('compute.#', interceptors.instance, interceptors.local_volume)]
 
     def start(self):
         for listener in self.listeners:
