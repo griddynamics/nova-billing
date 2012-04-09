@@ -16,9 +16,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from flask import Flask
 
-def get_api():
-    from nova_billing.db.sqlalchemy import api
-    return api
+app = Flask("nova_billing.heart")
 
-api = get_api()
+#app.config.from_pyfile("/etc/pioneer-inst/flask_settings.py")
+
+from . import rest

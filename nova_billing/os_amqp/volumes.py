@@ -16,26 +16,27 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Module for communication with Nova.
-"""
 
-from nova.auth import manager
-from nova import flags
-
-
-FLAGS = flags.FLAGS
+target_methods = (
+    "create_local_volume",
+    "delete_local_volume",
+    "resize_local_volume",
+)
 
 
-class NovaProjects(object):
-    projects = []
+def create_heart_request(method, body):
+    if method not in target_methods:
+        return None
+    
+    heart_request = {
+        "type": "nova/volume",
+        "name": body["args"]["volume_id"],
+        "account": body["_context_project_id"],       
+    }
 
-    def __init__(self):
-        self.manager = manager.AuthManager()
-
-    def get_projects(self):
-        self.projects = []
-        for project in self.manager.get_projects(None):
-            self.projects.append(project.name)
-        return self.projects
-
+    # TODO: multiply cost on the tariff
+    if method == "create_local_volume":        
+        heart_request["cost"] = body["args"]["size"]
+    elif method == "resize_local_volume":
+        heart_request["cost"] = body["args"]["new_size"]                        
+    return heart_request

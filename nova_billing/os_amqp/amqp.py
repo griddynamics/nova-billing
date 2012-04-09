@@ -20,34 +20,32 @@
 AMQP listener
 """
 
-import os
-import sys
 import time
 import socket
-from datetime import datetime
+import logging
 
 import eventlet
-import json
 
-import kombu
 import kombu.entity
 import kombu.messaging
 import kombu.connection
 
-from nova import exception
-from nova import flags
-from nova import log as logging
-
-from nova_billing import vm_states
-from nova_billing.db import api as db_api
 from nova_billing import utils
+from nova_billing.utils import global_conf
+
+from . import instances
+from . import volumes
 
 
-LOG = logging.getLogger("nova_billing.amqp_listener")
-FLAGS = flags.FLAGS
+LOG = logging.getLogger(__name__)
 
 
 class Service(object):
+    billing_heart = utils.get_heart_client()    
+    heart_request_interceptors = (
+        instances.create_heart_request,
+        volumes.create_heart_request,                                  
+    )
     """
     Class of AMQP listening service.
     Usually this service starts at the beginning of the billing daemon
@@ -57,11 +55,11 @@ class Service(object):
     The service listens for ``compute.#`` routing keys.
     """
     def __init__(self):
-        self.params = dict(hostname=FLAGS.rabbit_host,
-                          port=FLAGS.rabbit_port,
-                          userid=FLAGS.rabbit_userid,
-                          password=FLAGS.rabbit_password,
-                          virtual_host=FLAGS.rabbit_virtual_host)
+        self.params = dict(hostname=global_conf.rabbit_host,
+                          port=global_conf.rabbit_port,
+                          userid=global_conf.rabbit_userid,
+                          password=global_conf.rabbit_password,
+                          virtual_host=global_conf.rabbit_virtual_host)
         self.connection = None
 
     def reconnect(self):
@@ -75,13 +73,13 @@ class Service(object):
         self.connection = kombu.connection.BrokerConnection(**self.params)
 
         options = {
-            "durable": FLAGS.rabbit_durable_queues,
+            "durable": global_conf.rabbit_durable_queues,
             "auto_delete": False,
             "exclusive": False
         }
 
         exchange = kombu.entity.Exchange(
-                name=FLAGS.control_exchange,
+                name=global_conf.control_exchange,
                 type="topic",
                 durable=options["durable"],
                 auto_delete=options["auto_delete"])
@@ -104,71 +102,23 @@ class Service(object):
 
     def process_event(self, body, message):
         """
-        This function analyzes ``body`` and saves
-        event information to the database.
+        This function analyzes ``body`` and calls
+        heart_request_interceptors.
         """
         method = body.get("method", None)
-        instance_segment = None
-        descr = ""
-        if method == "run_instance":
-            instance_info = {
-                "project_id": body["args"]["request_spec"]
-                    ["instance_properties"]["project_id"],
-                "instance_id": body["args"]["instance_id"],
-            }
-            instance_type = body["args"]["request_spec"]["instance_type"]
-            for key in "local_gb", "memory_mb", "vcpus":
-                instance_info[key] = instance_type[key]
-            instance_info_ref = db_api.instance_info_create(instance_info)
-
-            instance_segment = {
-                "instance_info_id": instance_info_ref.id,
-                "segment_type": vm_states.ACTIVE,
-            }
-
-            descr = " instance info %s" % json.dumps(instance_info)
-        elif method == "terminate_instance":
-            pass
-        elif method == "start_instance":
-            instance_segment = {
-                "segment_type": vm_states.ACTIVE,
-            }
-        elif method == "stop_instance":
-            instance_segment = {
-                "segment_type": vm_states.STOPPED,
-            }
-        elif method == "unpause_instance":
-            instance_segment = {
-                "segment_type": vm_states.ACTIVE,
-            }
-        elif method == "pause_instance":
-            instance_segment = {
-                "segment_type": vm_states.PAUSED,
-            }
-        elif method == "resume_instance":
-            instance_segment = {
-                "segment_type": vm_states.ACTIVE,
-            }
-        elif method == "suspend_instance":
-            instance_segment = {
-                "segment_type": vm_states.SUSPENDED,
-            }
-        else:
-            return
-
-        event_datetime = self.get_event_datetime(body)
-        db_api.instance_segment_end(body["args"]["instance_id"], event_datetime)
-        if instance_segment:
-            instance_segment["begin_at"] = event_datetime
-            if not instance_segment.has_key("instance_info_id"):
-                instance_segment["instance_info_id"] = \
-                    db_api.instance_info_get_latest(body["args"]["instance_id"])
-            db_api.instance_segment_create(instance_segment)
+        heart_request = None
+        for interceptor in self.heart_request_interceptors:
+            heart_request = interceptor(method, body)
+            if heart_request is not None:
+                heart_request["datetime"] = utils.datetime_to_str(
+                    self.get_event_datetime(body))
+                self.billing_heart.event(heart_request)
+                break
         try:
             routing_key = message.delivery_info["routing_key"]
         except AttributeError, KeyError:
             routing_key = "<unknown>"
-        LOG.debug("routing_key=%s method=%s%s" % (routing_key, method, descr))
+        LOG.debug("routing_key=%s method=%s%s" % (routing_key, method))
 
     def get_event_datetime(self, body):
         return utils.now()

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Nova Billing
@@ -16,30 +17,37 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Possible vm states for instances.
+"""Starter script for Billing OS AMPQ binder."""
 
-There are integers for string states from ``nova.compute.vm_states``.
+import eventlet
+eventlet.monkey_patch()
 
-The following states are stored in the database:
+import os
+import sys
 
-* ACTIVE
-* PAUSED
-* SUSPENDED
-* STOPPED
-"""
 
-ACTIVE = 0
-BUILDING = 1
-REBUILDING = 2
+possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
+        sys.argv[0]), os.pardir, os.pardir))
+if os.path.exists(os.path.join(possible_topdir, "nova", "__init__.py")):
+    sys.path.insert(0, possible_topdir)
 
-PAUSED = 3
-SUSPENDED = 4
-RESCUED = 5
-DELETED = 6
-STOPPED = 7
 
-MIGRATING = 8
-RESIZING = 9
+from nova import flags
+from nova import wsgi
+from nova import log as logging
+from nova import service
+from nova import utils
 
-ERROR = 10
+from nova_billing.os_amqp import amqp
+
+def main():
+    utils.default_flagfile()
+    flags.FLAGS(sys.argv)
+    logging.setup()
+#    utils.monkey_patch()
+    service.serve(amqp.Service())
+    service.wait()
+
+
+if __name__ == '__main__':
+    main()

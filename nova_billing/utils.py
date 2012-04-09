@@ -24,7 +24,11 @@ Miscellaneous utility functions:
 """
 
 from datetime import datetime
-from nova_billing import vm_states
+from nova_billing.client import BillingHeartClient
+
+
+class ContextType(object):
+    JSON = "application/json"
 
 
 def total_seconds(td):
@@ -69,27 +73,6 @@ def datetime_to_str(dt):
     return ("%sZ" % dt.isoformat()) if dt else None
 
 
-used_resources = {
-    vm_states.ACTIVE: ("local_gb", "memory_mb", "vcpus"),
-    vm_states.SUSPENDED: ("local_gb", "memory_mb"),
-    vm_states.PAUSED: ("local_gb", "memory_mb"),
-    vm_states.STOPPED: ("local_gb", ),
-}
-
-
-def usage_add(usage, begin_at, end_at, vm_state, instance_info):
-    """
-    Increment used resource statistics depending on ``vm_state``.
-    Statistics is measured in (resource unit * second).
-    """
-    length = total_seconds(end_at - begin_at)
-    for key in ("local_gb", "memory_mb", "vcpus"):
-        usage[key] = (usage.get(key, 0) +
-            (length * instance_info[key]
-             if key in used_resources.get(vm_state, [])
-             else 0))
-
-
 def usage_to_hours(usage):
     """
     Convert usage measured for seconds to hours.
@@ -103,3 +86,53 @@ def dict_add(a, b):
     """
     for key in b:
         a[key] = a.get(key, 0) + b[key]
+
+
+def cost_add(cost, begin_at, end_at):
+    return cost if cost < 0 else cost * total_seconds(end_at - begin_at)
+
+
+try:
+    from nova import flags
+    FLAGS = flags.FLAGS
+except ImportError:
+    FLAGS = object()
+
+
+class GlobalConf(object):
+    admin_token = "999888777666"
+    billing_heart_url = "http://localhost:8080"
+    nova_url = "http://127.0.0.1:8774/v1.1"
+    keystone_url = "http://127.0.0.1:35357/v2.0"
+
+    def __getattr__(self, name):
+        try:
+            return getattr(FLAGS, name)
+        except AttributeError:
+            pass
+        raise AttributeError(name)
+    
+
+global_conf = GlobalConf()
+
+
+def get_heart_client():
+    return BillingHeartClient(
+        management_url=global_conf.billing_heart_url) 
+
+
+def get_nova_client():
+    from novaclient.v1_1 import Client
+    client = Client("", "", "", "")
+    client.client.auth_token = global_conf.admin_token
+    client.client.management_url = global_conf.nova_url
+    return client
+
+
+def get_keystone_client():
+    from keystoneclient.v2_0 import client as keystone_client
+    client = keystone_client.Client(
+            endpoint=global_conf.keystone_url,
+            token=global_conf.admin_token)
+    return client
+
