@@ -18,8 +18,8 @@
 
 from flask import Flask
 
+
 app = Flask("nova_billing.heart")
 
-#app.config.from_pyfile("/etc/pioneer-inst/flask_settings.py")
 
 from . import rest

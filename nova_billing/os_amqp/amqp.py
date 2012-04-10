@@ -110,8 +110,9 @@ class Service(object):
         for interceptor in self.heart_request_interceptors:
             heart_request = interceptor(method, body)
             if heart_request is not None:
-                heart_request["datetime"] = utils.datetime_to_str(
-                    self.get_event_datetime(body))
+                heart_request.setdefault("datetime", utils.datetime_to_str(
+                    self.get_event_datetime(body)))
+                heart_request.setdefault("account", body["_context_project_id"])
                 self.billing_heart.event(heart_request)
                 break
         try:

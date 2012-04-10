@@ -22,13 +22,6 @@ import webob
 from nova_billing import utils
 
 
-def log_it(msg):
-    f = open("/tmp/billing-glance", "at")
-    f.write(str(msg) + "\n")
-    f.close()
-        
-
-
 class GlanceBillingFilter(object):
     billing_heart = utils.get_heart_client()
 
@@ -48,13 +41,15 @@ class GlanceBillingFilter(object):
                 img_id, img_size = resp_json["image"]["id"], resp_json["image"]["size"]
             except KeyError:
                 return resp
-            heart_request = {"name": img_id, "cost": img_size}
+            heart_request = {"name": img_id,
+                             "linear": img_size}
         elif method == "DELETE":
-            heart_request = {"name": path_info[len("/images/"):]}
+            heart_request = {"name": path_info[len("/images/"):],
+                             "fixed": None}
         else:
             heart_request = None
         if heart_request is not None:
-            heart_request["type"] = "glance/image"
+            heart_request["rtype"] = "glance/image"
             heart_request["account"] = req.headers["X-Tenant"]
             heart_request["datetime"] = utils.datetime_to_str(utils.now())
             self.billing_heart.event(heart_request)

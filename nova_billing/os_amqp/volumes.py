@@ -30,8 +30,7 @@ def create_heart_request(method, body):
     
     heart_request = {
         "type": "nova/volume",
-        "name": body["args"]["volume_id"],
-        "account": body["_context_project_id"],       
+        "name": body["args"]["volume_id"],       
     }
 
     # TODO: multiply cost on the tariff

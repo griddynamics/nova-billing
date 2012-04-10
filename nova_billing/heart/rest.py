@@ -30,7 +30,7 @@ from . import app
 
 from .database import api as db_api
 from .database import db
-from .database.models import Account, Resource, Segment
+from .database.models import Account, Resource, Segment, Tariff
 
 from nova_billing import utils 
 from nova_billing.version import version_string
@@ -41,7 +41,22 @@ def to_json(resp):
             json.dumps(resp, 
             default=lambda obj: obj.isoformat() 
                 if isinstance(obj, datetime.datetime) else None),
-            mimetype=utils.ContextType.JSON)
+            mimetype=utils.ContentType.JSON)
+
+
+def check_attrs(rj, attr_list):
+    for attr in attr_list:
+        if attr not in rj:
+            raise BadRequest(
+                description="%s must be specified" % attr)
+
+
+def check_and_get_datatime(rj):
+    ret = utils.str_to_datetime(rj.get("datetime", None))
+    if not ret:
+        raise BadRequest(
+            description="valid datetime must be specified")
+    return ret
 
 
 @app.route("/version")
@@ -137,48 +152,137 @@ def get_usage():
 def request_json():
     ret = request.json
     if ret == None:
-        raise BadRequest()
+        raise BadRequest("Content-Type should be %s" % utils.ContentType.JSON)
     return ret
 
 
-def process_resource(rsrc, parent_id, account_id, event_datetime):
-    if not "type" in rsrc:
+def process_resource(rsrc, parent_id, account_id, event_datetime, tariffs):
+    """
+    linear - saved as a non-negative cost
+    fixed - saved with opposite sign (as a non-positive cost)
+    fixed=None - closes the segment but does not create a new one
+    """
+    if not "rtype" in rsrc:
         return
     rsrc_obj = db_api.resource_get_or_create(
         account_id, parent_id,
-        rsrc["type"], rsrc.get("name", None))
+        rsrc["rtype"], rsrc.get("name", None))
     rsrc_id = rsrc_obj.id
-    db_api.resource_segment_end(rsrc_id, event_datetime)
-    if "cost" in rsrc:
-        cost = rsrc["cost"]
-    elif "fixed" in rsrc:
-        cost = -rsrc["fixed"]
+
+    try:
+        attrs = rsrc["attrs"]
+    except KeyError:
+        pass
     else:
-        cost = 0
+        if rsrc_obj.attrs:
+            attrs.update(json.loads(rsrc_obj.attrs))
+        rsrc_obj.attrs = json.dumps(attrs)
+        db.session.merge(rsrc_obj)
+
+    close_segment = True
+    if "linear" in rsrc:
+        cost = -rsrc["linear"]
+    elif "fixed" in rsrc:
+        cost = rsrc["fixed"]
+    else:
+        cost = None
+        close_segment = False
+    if close_segment:
+        db_api.resource_segment_end(rsrc_id, event_datetime)
     if cost is not None:
-        obj = Segment(resource_id=rsrc_id,
-            cost=cost, begin_at=event_datetime)
+        obj = Segment(
+            resource_id=rsrc_id,
+            cost=-cost * tariffs.get(rsrc["rtype"], 1),
+            begin_at=event_datetime)
         db.session.add(obj)
+
     for child in rsrc.get("children", ()):
-        process_resource(child, rsrc_id, account_id, event_datetime)
+        process_resource(child, rsrc_id,
+                         account_id, event_datetime,
+                         tariffs)
 
 
 @app.route("/event", methods=["POST"])
 def post_event():
     rj = request_json()
+    check_attrs(rj, ("rtype", ))
+    rj_datetime = check_and_get_datatime(rj)
     try:
         account_name = rj["account"]
     except KeyError:
-        resource = db_api.resource_find(rj.get("type"), rj.get("name"))
+        resource = db_api.resource_find(rj["rtype"], rj.get("name", None))
         if not resource:
             raise BadRequest(description="account must be specified")
         account_id = resource.account_id
+        account_name = resource.name
     else:
         account = db_api.account_get_or_create(account_name)
         account_id = account.id
 
-    process_resource(rj, None, account_id,
-                     utils.str_to_datetime(rj["datetime"]))
+    tariffs = db_api.tariff_map()
+    process_resource(rj, None,
+                     account_id,
+                     rj_datetime,
+                     tariffs)
 
     db.session.commit()
-    return Response("hello")
+    return to_json({"account": account_name,
+                    "rtype": rj["rtype"],
+                    "datetime": rj_datetime,
+                    "name": rj.get("name", None)})
+
+
+@app.route("/tariff", methods=["GET"])
+def get_tariff():
+    tariffs = db_api.tariff_map()
+    return to_json(tariffs)
+
+
+@app.route("/tariff", methods=["POST"])
+def change_tariff():
+    rj = request_json()
+    check_attrs(rj, ("values", ))
+    rj_datetime = check_and_get_datatime(rj)
+    migrate = rj.get("migrate", False)
+
+    if migrate:
+        old_tariffs = db_api.tariff_map()
+    new_tariffs = rj["values"]
+    for key, value in new_tariffs.iteritems():
+        if isinstance(value, int) or isinstance(value, float):
+            db.session.merge(Tariff(rtype=key, multiplier=value))
+    
+    if migrate:
+        db_api.tariffs_migrate(
+            old_tariffs, 
+            new_tariffs,
+            rj_datetime)
+    
+    db.session.commit()
+
+    return to_json(new_tariffs)
+
+
+@app.route("/account", methods=["GET"])
+def get_account():
+    return to_json([
+        {"id": key, "name": value}
+        for key, value in db_api.account_map().iteritems()])
+
+
+@app.route("/resource", methods=["GET"])
+def get_resource():
+    res = Resource.query
+    try:
+        res = res.filter_by(account_id=request.args["account_id"])
+    except KeyError:
+        pass
+    return to_json([
+        {"id": obj.id,
+         "name": obj.name,
+         "rtype": obj.rtype,
+         "account_id": obj.account_id,
+         "parent_id": obj.parent_id,
+         "attrs": json.loads(obj.attrs) if obj.attrs else {}}
+        for obj in res.all() 
+    ])

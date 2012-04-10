@@ -20,12 +20,13 @@
 Nova Billing API.
 """
 
+from itertools import repeat
 from datetime import datetime
 
 from sqlalchemy.sql import func, and_, or_
-from sqlalchemy.sql.expression import select
+from sqlalchemy.sql.expression import text
 
-from .models import Account, Resource, Segment
+from .models import Account, Resource, Segment, Tariff
 from . import db
 
 from nova_billing import utils
@@ -88,7 +89,7 @@ def usage_on_interval(period_start, period_stop, account_id=None):
                 "cost": 0.0,
                 "parent_id": rsrc.parent_id,
                 "name": rsrc.name,
-                "type": rsrc.type,
+                "rtype": rsrc.rtype,
             }
             retval[rsrc.account_id][rsrc.id] = rsrc_descr
             rsrc_by_id[rsrc.id] = rsrc_descr
@@ -128,17 +129,17 @@ def account_get_or_create(name):
     return obj
 
 
-def resource_get_or_create(account_id, parent_id, type, name):
+def resource_get_or_create(account_id, parent_id, rtype, name):
     obj = Resource.query.filter_by(
         account_id=account_id,
         parent_id=parent_id,
-        type=type,
+        rtype=rtype,
         name=name).first()
     if obj == None:
         obj = Resource( 
             account_id=account_id,
             parent_id=parent_id,
-            type=type,
+            rtype=rtype,
             name=name)
         db.session.add(obj)
         db.session.commit()
@@ -152,13 +153,61 @@ def resource_segment_end(resource_id, end_at):
 
 
 def account_map():
-    return dict(((account.id, account.name)
-                 for account in Account.query.all()))
+    return dict(((obj.id, obj.name)
+                 for obj in Account.query.all()))
 
 
-def resource_find(type, name):
+def tariff_map():
+    return dict(((obj.rtype, obj.multiplier)
+                 for obj in Tariff.query.all()))
+
+
+def resource_find(rtype, name):
     resource_account = (db.session.query(Resource, Account).
-        filter(and_(Resource.type == type,
+        filter(and_(Resource.rtype == rtype,
                and_(Resource.name == name,
                Resource.account_id == Account.id))).first())
     return resource_account[0] if resource_account else None
+
+
+def tariffs_migrate(old_tariffs, new_tariffs, event_datetime):
+    new_tariffs = dict(
+        ((key, float(value))
+         for key, value in new_tariffs.iteritems()
+         if value != old_tariffs.get(key, 1.0)))
+    connection = db.session.connection()
+    for rtype in new_tariffs:
+        old_t = old_tariffs.get(rtype, 1.0)
+        if old_t < 0:
+            old_t = 1.0
+        
+        connection.execute(
+            "insert into %(segment)s"
+            " (resource_id, cost, begin_at, end_at)"
+            " select resource_id, cost * ?, ?, NULL"
+            " from %(segment)s, %(resource)s"
+            " where end_at is NULL "
+            " and %(segment)s.resource_id = %(resource)s.id"
+            " and %(resource)s.rtype = ?" %
+            {"segment": Segment.__tablename__,
+             "resource": Resource.__tablename__},
+            new_tariffs[rtype] / old_t,
+            event_datetime,
+            rtype)
+
+    changed_keys = new_tariffs.keys()
+    max_args = 32
+    for i in xrange(1 + len(changed_keys) / max_args):
+        partial_keys = changed_keys[i * max_args:(i + 1) * max_args] 
+        connection.execute(
+            "update %(segment)s"
+            " set end_at = ?"
+            " where end_at is NULL"
+            " and begin_at != ?"
+            " and resource_id in"
+            " (select id from %(resource)s where rtype in (%(type_list)s))" %
+            {"segment": Segment.__tablename__,
+             "resource": Resource.__tablename__,
+             "type_list": ", ".join(repeat("?", len(partial_keys)))},
+            event_datetime, event_datetime,
+            *partial_keys)

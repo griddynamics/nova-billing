@@ -25,6 +25,9 @@ from flaskext.sqlalchemy import SQLAlchemy
 from . import db
 
 
+TypeLength = 16
+
+
 class BillingBase(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
@@ -32,28 +35,35 @@ class BillingBase(object):
 
 
 class Account(db.Model, BillingBase):
-    __tablename__ = 'account'
+    __tablename__ = "account"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
 
 
 class Resource(db.Model, BillingBase):
-    __tablename__ = 'resource'
+    __tablename__ = "resource"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255))
-    type = db.Column(db.String(16), nullable=False)
-    account_id = db.Column(db.Integer, db.ForeignKey('account.id'), nullable=False)
-    parent_id = db.Column(db.Integer, db.ForeignKey('resource.id'))
+    rtype = db.Column(db.String(TypeLength), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey("account.id"), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey("resource.id"))
     attrs = db.Column(db.UnicodeText)
 
 
 class Segment(db.Model, BillingBase):
-    __tablename__ = 'segment'
+    __tablename__ = "segment"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    resource_id = db.Column(db.Integer, db.ForeignKey('resource.id'), nullable=False)
+    resource_id = db.Column(db.Integer, db.ForeignKey("resource.id"), nullable=False)
     
-    # positive: must multiply on time
+    # positive: linear (must multiply on time)
+    # zero: free of charge
     # negative: fixed cost
     cost = db.Column(db.Float, nullable=False)
     begin_at = db.Column(db.DateTime, nullable=False)
     end_at = db.Column(db.DateTime, nullable=True)
+
+
+class Tariff(db.Model, BillingBase):
+    __tablename__ = "tariff"
+    rtype = db.Column(db.String(TypeLength), nullable=False, primary_key=True)
+    multiplier = db.Column(db.Float, nullable=False)

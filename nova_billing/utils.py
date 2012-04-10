@@ -23,11 +23,13 @@ Miscellaneous utility functions:
 - other.
 """
 
+import json
 from datetime import datetime
+
 from nova_billing.client import BillingHeartClient
 
 
-class ContextType(object):
+class ContentType(object):
     JSON = "application/json"
 
 
@@ -100,20 +102,35 @@ except ImportError:
 
 
 class GlobalConf(object):
-    admin_token = "999888777666"
-    billing_heart_url = "http://localhost:8080"
-    nova_url = "http://127.0.0.1:8774/v1.1"
-    keystone_url = "http://127.0.0.1:35357/v2.0"
+    _conf = {
+        "admin_token": "999888777666",
+        "billing_heart_url": "http://localhost:8080",
+        "nova_url": "http://127.0.0.1:8774/v1.1",
+        "keystone_url": "http://127.0.0.1:35357/v2.0",
+        "heart_db_url": "sqlite://///var/tmp/nova-billing.db",
+    }
+
+    def load_from_file(self, filename):
+        try:
+            with open(filename, "r") as file:
+                self._conf = json.loads(file)
+        except:
+            pass
 
     def __getattr__(self, name):
+        try:
+            return self._conf[name]
+        except KeyError:
+            pass
         try:
             return getattr(FLAGS, name)
         except AttributeError:
             pass
         raise AttributeError(name)
-    
+
 
 global_conf = GlobalConf()
+global_conf.load_from_file("/etc/nova-billing/settings.json")
 
 
 def get_heart_client():
