@@ -1,0 +1,12 @@
+[
+    {
+        "account_id": 1, 
+        "rtype": "nova/instance", 
+        "parent_id": null, 
+        "attrs": {
+            "instance_type": "m1.small"
+        }, 
+        "id": 1, 
+        "name": "16"
+    }
+]

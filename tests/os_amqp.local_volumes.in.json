@@ -1,0 +1,96 @@
+[
+    {
+        "_context_roles": [
+            "projectmanager"
+        ], 
+        "_context_request_id": "29615116-ddd0-4a20-8018-ef5f90f8bdf3", 
+        "args": {
+            "volume_id": 12,
+            "size": 1024 
+        }, 
+        "_context_auth_token": null, 
+        "_context_user_id": "admin", 
+        "_context_read_deleted": false, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "method": "create_local_volume", 
+        "_context_remote_address": "128.107.79.131"
+    }, 
+    {
+        "_context_roles": [
+            "projectmanager"
+        ], 
+        "_context_request_id": "29615116-ddd0-4a20-8018-ef5f90f8bdf3", 
+        "args": {
+            "volume_id": 12,
+            "new_size": 20 
+        }, 
+        "_context_auth_token": null, 
+        "_context_user_id": "admin", 
+        "_context_read_deleted": false, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "method": "resize_local_volume", 
+        "_context_remote_address": "128.107.79.131"
+    }, 
+    {
+        "_context_roles": [
+            "projectmanager"
+        ], 
+        "_context_request_id": "29615116-ddd0-4a20-8018-ef5f90f8bdf3", 
+        "args": {
+            "volume_id": 3,
+            "size": 1024 
+        }, 
+        "_context_auth_token": null, 
+        "_context_user_id": "admin", 
+        "_context_read_deleted": false, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "method": "create_local_volume", 
+        "_context_remote_address": "128.107.79.131"
+    }, 
+    {
+        "_context_roles": [
+            "projectmanager"
+        ], 
+        "_context_request_id": "29615116-ddd0-4a20-8018-ef5f90f8bdf3", 
+        "args": {
+            "volume_id": 3,
+            "new_size": 20 
+        }, 
+        "_context_auth_token": null, 
+        "_context_user_id": "admin", 
+        "_context_read_deleted": false, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "method": "resize_local_volume", 
+        "_context_remote_address": "128.107.79.131"
+    }, 
+     {
+        "_context_roles": [
+            "projectmanager"
+        ], 
+        "_context_request_id": "29615116-ddd0-4a20-8018-ef5f90f8bdf3", 
+        "args": {
+            "volume_id": 12
+        }, 
+        "_context_auth_token": null, 
+        "_context_user_id": "admin", 
+        "_context_read_deleted": false, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "method": "delete_local_volume", 
+        "_context_remote_address": "128.107.79.131"
+    }
+]

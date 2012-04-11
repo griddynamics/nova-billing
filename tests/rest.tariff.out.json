@@ -1,0 +1,6 @@
+{
+    "local_gb": 2.0,
+    "memory_mb": 3.0,
+    "vcpus": 0.5,
+    "glance/image": 1.0
+}

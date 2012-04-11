@@ -18,6 +18,7 @@
 
 from nova_billing import utils
 
+
 class vm_states(object):
     ACTIVE = 0
     BUILDING = 1
@@ -100,7 +101,7 @@ def create_heart_request(method, body):
         return None
 
     heart_request = {
-        "type": "nova/instance",
+        "rtype": "nova/instance",
         "name": body["args"]["instance_id"],
     }
     child_keys = ("local_gb", "memory_mb", "vcpus")
@@ -109,18 +110,18 @@ def create_heart_request(method, body):
         instance_type = body["args"]["request_spec"]["instance_type"] 
         heart_request["attrs"] = { "instance_type": instance_type["name"] }
         heart_request["children"] = [
-            {"type": key, "linear": instance_type[key]}
+            {"rtype": key, "linear": instance_type[key]}
             for key in child_keys]
     elif method == "terminate_instance":
         heart_request["fixed"] = None
         heart_request["children"] = [
-            {"type": key, "fixed": None}
+            {"rtype": key, "fixed": None}
             for key in child_keys]
     else:
         used = used_resources[state]
         flav = get_instance_flavor(body["args"]["instance_id"])
         heart_request["children"] = [
-            {"type": key,
+            {"rtype": key,
              "linear": flav[key] if key in used else 0}
             for key in ("memory_mb", "vcpus")]
     return heart_request

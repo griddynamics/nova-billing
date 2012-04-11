@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-REST API for Nova Billing
+REST API for Nova Billing Heart
 """
 
 import json
@@ -32,15 +32,21 @@ from .database import api as db_api
 from .database import db
 from .database.models import Account, Resource, Segment, Tariff
 
-from nova_billing import utils 
+from nova_billing import utils
 from nova_billing.version import version_string
+
+
+def request_json():
+    ret = request.json
+    if ret == None:
+        raise BadRequest("Content-Type should be %s" % utils.ContentType.JSON)
+    return ret
 
 
 def to_json(resp):
     return Response(
-            json.dumps(resp, 
-            default=lambda obj: obj.isoformat() 
-                if isinstance(obj, datetime.datetime) else None),
+            json.dumps(resp,
+            default=utils.datetime_to_str),
             mimetype=utils.ContentType.JSON)
 
 
@@ -65,15 +71,16 @@ def get_version():
         "version": version_string(),
         "application": "nova-billing",
         "links": [
-            {
-                "href": "http://%s:%s/usage" %
-                    (request.est.environ["SERVER_NAME"],
-                     request.est.environ["SERVER_PORT"]),
+            [{
+                "href": "http://%s:%s/%s" %
+                    (request.environ["SERVER_NAME"],
+                     request.environ["SERVER_PORT"],
+                     url),
                 "rel": "self",
-            },
+            } for url in "bill", "resource", "account", "tariff" ],
         ],
     }
-    
+
     return jsonify(ans_dict)
 
 
@@ -123,10 +130,10 @@ def get_period():
     return period_start, period_end
 
 
-@app.route("/usage")
-def get_usage(): 
+@app.route("/bill")
+def get_bill():
     account_name = request.args.get("account", None)
-    if account_name: 
+    if account_name:
         account = Account.query.filter_by(name=account_name).first()
         if account == None:
             raise NotFound()
@@ -135,28 +142,22 @@ def get_usage():
         account_id = None
 
     period_start, period_end = get_period()
-    total_statistics = db_api.usage_on_interval(
+    total_statistics = db_api.bill_on_interval(
         period_start, period_end, account_id)
 
     accounts = db_api.account_map()
     ans_dict = {
         "period_start": period_start,
         "period_end": period_end,
-        "usage": dict((
-            (accounts.get(key, key), value) 
-            for key, value in total_statistics.iteritems())),
+        "bill": [{
+            "id": key, "name": accounts.get(key, None), 
+            "resources": value
+        } for key, value in total_statistics.iteritems()],
     }
     return to_json(ans_dict)
 
 
-def request_json():
-    ret = request.json
-    if ret == None:
-        raise BadRequest("Content-Type should be %s" % utils.ContentType.JSON)
-    return ret
-
-
-def process_resource(rsrc, parent_id, account_id, event_datetime, tariffs):
+def process_event(rsrc, parent_id, account_id, event_datetime, tariffs):
     """
     linear - saved as a non-negative cost
     fixed - saved with opposite sign (as a non-positive cost)
@@ -175,8 +176,8 @@ def process_resource(rsrc, parent_id, account_id, event_datetime, tariffs):
         pass
     else:
         if rsrc_obj.attrs:
-            attrs.update(json.loads(rsrc_obj.attrs))
-        rsrc_obj.attrs = json.dumps(attrs)
+            attrs.update(rsrc_obj.get_attrs())
+        rsrc_obj.set_attrs(attrs)
         db.session.merge(rsrc_obj)
 
     close_segment = True
@@ -197,9 +198,29 @@ def process_resource(rsrc, parent_id, account_id, event_datetime, tariffs):
         db.session.add(obj)
 
     for child in rsrc.get("children", ()):
-        process_resource(child, rsrc_id,
+        process_event(child, rsrc_id,
                          account_id, event_datetime,
                          tariffs)
+
+
+def process_resource(rsrc, parent_id, account_id):
+    if not "rtype" in rsrc:
+        return
+    rsrc_obj = db_api.resource_get_or_create(
+        account_id, parent_id,
+        rsrc["rtype"], rsrc.get("name", None))
+    rsrc_id = rsrc_obj.id
+
+    try:
+        attrs = rsrc["attrs"]
+    except KeyError:
+        pass
+    else:
+        rsrc_obj.set_attrs(attrs)
+        db.session.merge(rsrc_obj)
+
+    for child in rsrc.get("children", ()):
+        process_resource(child, rsrc_id, account_id)
 
 
 @app.route("/event", methods=["POST"])
@@ -220,10 +241,7 @@ def post_event():
         account_id = account.id
 
     tariffs = db_api.tariff_map()
-    process_resource(rj, None,
-                     account_id,
-                     rj_datetime,
-                     tariffs)
+    process_event(rj, None,  account_id, rj_datetime, tariffs)
 
     db.session.commit()
     return to_json({"account": account_name,
@@ -251,13 +269,13 @@ def change_tariff():
     for key, value in new_tariffs.iteritems():
         if isinstance(value, int) or isinstance(value, float):
             db.session.merge(Tariff(rtype=key, multiplier=value))
-    
+
     if migrate:
         db_api.tariffs_migrate(
-            old_tariffs, 
+            old_tariffs,
             new_tariffs,
             rj_datetime)
-    
+
     db.session.commit()
 
     return to_json(new_tariffs)
@@ -273,16 +291,41 @@ def get_account():
 @app.route("/resource", methods=["GET"])
 def get_resource():
     res = Resource.query
-    try:
-        res = res.filter_by(account_id=request.args["account_id"])
-    except KeyError:
-        pass
+    filter = dict(((fld, request.args[fld]) 
+        for fld in ("account_id", "name", "id", "rtype", "parent_id")
+        if fld in request.args))
+    if filter:
+        res = res.filter_by(**filter)
     return to_json([
         {"id": obj.id,
          "name": obj.name,
          "rtype": obj.rtype,
          "account_id": obj.account_id,
          "parent_id": obj.parent_id,
-         "attrs": json.loads(obj.attrs) if obj.attrs else {}}
-        for obj in res.all() 
+         "attrs": obj.get_attrs(),
+        } for obj in res.all()
     ])
+
+
+@app.route("/resource", methods=["POST"])
+def post_resource():
+    rj = request_json()
+    check_attrs(rj, ("rtype", ))
+    try:
+        account_name = rj["account"]
+    except KeyError:
+        resource = db_api.resource_find(rj["rtype"], rj.get("name", None))
+        if not resource:
+            raise BadRequest(description="account must be specified")
+        account_id = resource.account_id
+        account_name = resource.name
+    else:
+        account = db_api.account_get_or_create(account_name)
+        account_id = account.id
+
+    process_resource(rj, None,  account_id)
+
+    db.session.commit()
+    return to_json({"account": account_name,
+                    "rtype": rj["rtype"],
+                    "name": rj.get("name", None)})

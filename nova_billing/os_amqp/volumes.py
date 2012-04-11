@@ -29,13 +29,14 @@ def create_heart_request(method, body):
         return None
     
     heart_request = {
-        "type": "nova/volume",
+        "rtype": "nova/volume",
         "name": body["args"]["volume_id"],       
     }
 
-    # TODO: multiply cost on the tariff
     if method == "create_local_volume":        
-        heart_request["cost"] = body["args"]["size"]
+        heart_request["linear"] = body["args"]["size"]
     elif method == "resize_local_volume":
-        heart_request["cost"] = body["args"]["new_size"]                        
+        heart_request["linear"] = body["args"]["new_size"]
+    else:
+        heart_request["fixed"] = None                        
     return heart_request

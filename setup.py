@@ -27,15 +27,27 @@ import sys
 from setuptools import setup, find_packages
 
 
+ROOT = os.path.dirname(__file__)
+sys.path.append(ROOT)
+
+
+from nova_billing.version import version_string
+
+
 setup(name='nova-billing',
-      version='0.0.2',
+      version=version_string(),
       license='GNU GPL v3',
       description='cloud computing fabric controller',
       author='Alessio Ababilov, Ivan Kolodyazhny (GridDynamics Openstack Core Team, (c) GridDynamics)',
       author_email='openstack@griddynamics.com',
       url='http://www.griddynamics.com/openstack',
       packages=find_packages(exclude=['bin', 'smoketests', 'tests']),
-      scripts=['bin/nova-billing'],
+      entry_points={
+        'console_scripts': [
+            'nova-billing-heart = nova_billing.heart.main:main',
+            'nova-billing-os-amqp = nova_billing.os_amqp.main:main',
+        ]
+      },
       py_modules=[],
       test_suite='tests'
 )

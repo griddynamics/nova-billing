@@ -21,5 +21,5 @@ Nova Billing version.
 """
 
 def version_string():
-    return "0.0.2"
+    return "2.0.0"
 

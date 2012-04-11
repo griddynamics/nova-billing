@@ -72,7 +72,7 @@ def datetime_to_str(dt):
     Convert datetime.datetime instance to string.
     Used for JSONization.
     """
-    return ("%sZ" % dt.isoformat()) if dt else None
+    return ("%sZ" % dt.isoformat()) if isinstance(dt, datetime) else None
 
 
 def usage_to_hours(usage):
@@ -91,7 +91,8 @@ def dict_add(a, b):
 
 
 def cost_add(cost, begin_at, end_at):
-    return cost if cost < 0 else cost * total_seconds(end_at - begin_at)
+    # 3600 * 24 == 86400
+    return cost if cost < 0 else cost * total_seconds(end_at - begin_at) / 86400.0
 
 
 try:
@@ -103,17 +104,15 @@ except ImportError:
 
 class GlobalConf(object):
     _conf = {
-        "admin_token": "999888777666",
-        "billing_heart_url": "http://localhost:8080",
-        "nova_url": "http://127.0.0.1:8774/v1.1",
-        "keystone_url": "http://127.0.0.1:35357/v2.0",
-        "heart_db_url": "sqlite://///var/tmp/nova-billing.db",
+        "host": "127.0.0.1",
+        "port": 8080,
+        "logging_level": "DEBUG",
     }
 
     def load_from_file(self, filename):
         try:
             with open(filename, "r") as file:
-                self._conf = json.loads(file)
+                self._conf.update(json.loads(file.read()))
         except:
             pass
 

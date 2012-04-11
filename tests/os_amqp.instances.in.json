@@ -1,0 +1,112 @@
+{
+    "run": {
+        "_context_roles": [
+            "projectmanager"
+        ], 
+        "_context_request_id": "29615116-ddd0-4a20-8018-ef5f90f8bdf3", 
+        "args": {
+            "request_spec": {
+                "num_instances": 1, 
+                "image": {
+                    "status": "active", 
+                    "deleted": false, 
+                    "container_format": "ami", 
+                    "updated_at": "2011-12-05 12:15:26.659439", 
+                    "is_public": true, 
+                    "deleted_at": null, 
+                    "properties": {
+                        "kernel_id": "2", 
+                        "owner": null, 
+                        "min_ram": "0", 
+                        "ramdisk_id": "1", 
+                        "min_disk": "0"
+                    }, 
+                    "size": 216858624, 
+                    "name": "SL61", 
+                    "checksum": "ecd1d23a8039b72812db4fee5a11a547", 
+                    "created_at": "2011-12-05 12:15:25.541042", 
+                    "disk_format": "ami", 
+                    "id": 4, 
+                    "location": "file:///var/lib/glance/images/4"
+                }, 
+                "filter": null, 
+                "instance_type": {
+                    "rxtx_quota": 0, 
+                    "deleted": false, 
+                    "updated_at": null, 
+                    "extra_specs": {}, 
+                    "local_gb": 20, 
+                    "id": 5, 
+                    "deleted_at": null, 
+                    "name": "m1.small", 
+                    "flavorid": 2, 
+                    "created_at": null, 
+                    "memory_mb": 2048, 
+                    "vcpus": 1, 
+                    "rxtx_cap": 0, 
+                    "swap": 0
+                }, 
+                "blob": null, 
+                "instance_properties": {
+                    "vm_state": "building", 
+                    "availability_zone": null, 
+                    "ramdisk_id": "1", 
+                    "instance_type_id": 5, 
+                    "user_data": "", 
+                    "vm_mode": null, 
+                    "reservation_id": "r-851pambx", 
+                    "user_id": "admin", 
+                    "display_description": null, 
+                    "key_data": null, 
+                    "power_state": 0, 
+                    "project_id": "systenant", 
+                    "metadata": {}, 
+                    "access_ip_v6": null, 
+                    "access_ip_v4": null, 
+                    "kernel_id": "2", 
+                    "key_name": null, 
+                    "display_name": null, 
+                    "config_drive_id": "", 
+                    "local_gb": 20, 
+                    "architecture": null, 
+                    "locked": false, 
+                    "launch_time": "2011-12-06T19:12:57Z", 
+                    "memory_mb": 2048, 
+                    "vcpus": 1, 
+                    "image_ref": 4, 
+                    "root_device_name": null, 
+                    "os_type": null, 
+                    "config_drive": ""
+                }
+            }, 
+            "requested_networks": null, 
+            "availability_zone": null, 
+            "instance_id": 16, 
+            "admin_password": null, 
+            "injected_files": null
+        }, 
+        "_context_auth_token": null, 
+        "_context_user_id": "admin", 
+        "_context_read_deleted": false, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "method": "run_instance", 
+        "_context_remote_address": "128.107.79.131"
+    }, 
+    "any": {
+        "_context_auth_token": null, 
+        "_context_strategy": "noauth", 
+        "_context_is_admin": true, 
+        "_context_read_deleted": false, 
+        "_context_project_id": "systenant", 
+        "_context_timestamp": "2011-12-06T19:12:57.805503", 
+        "_context_user_id": "admin", 
+        "args": {
+            "instance_id": 16
+        }, 
+        "method": "start_instance", 
+        "_context_remote_address": "128.107.79.131"
+    }
+}

@@ -20,6 +20,8 @@
 SQLAlchemy models for Nova Billing.
 """
 
+import json
+
 from flaskext.sqlalchemy import SQLAlchemy
 
 from . import db
@@ -48,6 +50,17 @@ class Resource(db.Model, BillingBase):
     account_id = db.Column(db.Integer, db.ForeignKey("account.id"), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey("resource.id"))
     attrs = db.Column(db.UnicodeText)
+    
+    def get_attrs(self):
+        if self.attrs:
+            try:
+                return json.loads(self.attrs)
+            except:
+                return {}
+        return {}
+
+    def set_attrs(self, attrs):
+        self.attrs = json.dumps(attrs)
 
 
 class Segment(db.Model, BillingBase):

@@ -1,0 +1,10 @@
+{
+    "datetime": "2010-01-01T00:00:00.000000Z",
+    "migrate": false,
+    "values": {
+        "local_gb": 2.0,
+        "memory_mb": 3.0,
+        "vcpus": 0.5,
+        "glance/image": 1.0
+    }
+}

@@ -22,24 +22,28 @@
 import argparse
 import logging
 
-from nova_billing.heart import rest
 from nova_billing.heart.database import db
+from nova_billing.heart import app
+from nova_billing.utils import global_conf
 
 
 def main():
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("--no-reload", "-r", default=False,
-                            action="store_true", help="do not reload")
+    arg_parser.add_argument("--reload", "-r", default=False,
+                            action="store_true",
+                            help="reload when the source changes")
     arg_parser.add_argument("host:port", nargs="?",
-                            default="127.0.0.1:8080", help="host:port")
+                            default="%s:%s" % (
+                                global_conf.host,
+                                global_conf.port),
+                            help="host:port")
     args = arg_parser.parse_args()
     
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=getattr(logging, global_conf.logging_level))
     db.create_all()
-    from nova_billing.heart import app
     listen = getattr(args, "host:port").split(':')
     app.debug = True
-    app.run(host=listen[0], port=int(listen[1]), use_reloader=not args.no_reload)
+    app.run(host=listen[0], port=int(listen[1]), use_reloader=args.reload)
 
 
 if __name__ == '__main__':

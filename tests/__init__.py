@@ -22,6 +22,8 @@ Base class for Nova Billing unit tests.
 
 import unittest
 import stubout
+import json
+import os
 
 
 class TestCase(unittest.TestCase):
@@ -34,3 +36,24 @@ class TestCase(unittest.TestCase):
         """Runs after each test method to tear down test environment."""
         self.stubs.UnsetAll()
         self.stubs.SmartUnsetAll()
+
+    @staticmethod
+    def json_load_from_file(filename):
+        with open(os.path.join(os.path.dirname(
+                os.path.abspath(__file__)), filename),
+            "rt") as json_file:
+            return json.load(json_file)
+
+    #Set it to True for json out files regeneration
+    write_json = False
+    
+    def json_check_with_file(self, data, filename):
+        if self.write_json:
+            with open(os.path.join(os.path.dirname(
+                os.path.abspath(__file__)), filename),
+            "wt") as json_file:
+                json.dump(data, json_file, indent=4)
+        else:
+            self.assertEqual(data, 
+                             self.json_load_from_file(filename))
+        

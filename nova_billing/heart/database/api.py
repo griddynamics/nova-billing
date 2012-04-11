@@ -32,39 +32,48 @@ from . import db
 from nova_billing import utils
 
 
-def usage_on_interval(period_start, period_stop, account_id=None):
-    # FIXME: Fix the doc!
+def bill_on_interval(period_start, period_stop, account_id=None):
     """
     Retrieve statistics for the given interval [``period_start``, ``period_stop``]. 
-    ``account_id=None`` means all projects.
+    ``account_id=None`` means all accounts.
 
     Example of the returned value:
 
     .. code-block:: python
 
         {
-            "systenant": {
-                12: {
-                    "created_at": datetime.datetime(2011, 1, 1),
-                    "destroyed_at": datetime.datetime(2011, 1, 2),
-                    "usage": {"local_gb": 56, "memory_mb": 89, "vcpus": 4},
-                },
-                14: {
-                    "created_at": datetime.datetime(2011, 1, 4),
-                    "destroyed_at": datetime.datetime(2011, 2, 1),
-                    "usage": {"local_gb": 18, "memory_mb": 45, "vcpus": 5},
-                },
-            },
-            "tenant12": {
-                24: {
-                    "created_at": datetime.datetime(2011, 1, 1),
-                    "destroyed_at": datetime.datetime(2011, 1, 2),
-                    "usage": {"local_gb": 33, "memory_mb": 12, "vcpus": 8},
-                },
-            }
+            1: [
+                {
+                    "name": "16", 
+                    "rtype": "nova/instance", 
+                    "created_at": "2011-01-02T00:00:00Z", 
+                    "destroyed_at": null, 
+                    "parent_id": null, 
+                    "cost": 0.0, 
+                    "id": 1
+                }, 
+                {
+                    "name": null, 
+                    "rtype": "local_gb", 
+                    "created_at": "2011-01-02T00:00:00Z", 
+                    "destroyed_at": null, 
+                    "parent_id": 1, 
+                    "cost": 1200.0, 
+                    "id": 2
+                }, 
+                {
+                    "name": null, 
+                    "rtype": "memory_mb", 
+                    "created_at": "2011-01-02T00:00:00Z", 
+                    "destroyed_at": null, 
+                    "parent_id": 1, 
+                    "cost": 380928.0, 
+                    "id": 3
+                }
+            ]
         }
 
-    :returns: a dictionary where keys are project ids and values are project statistics.
+    :returns: a dictionary where keys are account ids and values are billing lists.
     """
     result = (db.session.query(Segment, Resource).
                 join(Resource).
@@ -79,11 +88,12 @@ def usage_on_interval(period_start, period_stop, account_id=None):
     now = datetime.utcnow()
     for segment, rsrc in result:
         if not retval.has_key(rsrc.account_id):
-            retval[rsrc.account_id] = {}
+            retval[rsrc.account_id] = []
         try:
             rsrc_descr = rsrc_by_id[rsrc.id]
         except KeyError:
             rsrc_descr = {
+                "id": rsrc.id,
                 "created_at": None,
                 "destroyed_at": None,
                 "cost": 0.0,
@@ -91,7 +101,7 @@ def usage_on_interval(period_start, period_stop, account_id=None):
                 "name": rsrc.name,
                 "rtype": rsrc.rtype,
             }
-            retval[rsrc.account_id][rsrc.id] = rsrc_descr
+            retval[rsrc.account_id].append(rsrc_descr)
             rsrc_by_id[rsrc.id] = rsrc_descr
         begin_at = max(segment.begin_at, period_start)
         end_at = min(segment.end_at or now, period_stop)
@@ -119,6 +129,7 @@ def usage_on_interval(period_start, period_stop, account_id=None):
             rsrc_descr["destroyed_at"] = row.max_stop
 
     return retval
+
 
 def account_get_or_create(name):
     obj = Account.query.filter_by(name=name).first()

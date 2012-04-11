@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-# nova-billing	Nova Billing Server
+# nova-billing-heart	Nova Billing Heart Server
 #
 # chkconfig: 2345 96 04
 #
 # config: /etc/nova/nova.conf
-# pidfile: /var/run/nova/nova-billing.pid
+# pidfile: /var/run/nova/nova-billing-heart.pid
 
 ### BEGIN INIT INFO
-# Provides: nova-billing
+# Provides: nova-billing-heart
 # Required-Start: $local_fs $network $syslog
 # Required-Stop: $local_fs $syslog
 # Should-Start: $syslog
@@ -24,9 +24,8 @@
 # Source function library.
 . /etc/init.d/functions
 
-prog="Nova Billing Server"
-suffix="billing"
-flgfile=/etc/nova/nova.conf
+prog="Nova Billing Heart Server"
+suffix="billing-heart"
 logfile=/var/log/nova/nova-$suffix.log
 pidfile=/var/run/nova/nova-$suffix.pid
 lckfile=/var/lock/subsys/nova-$suffix
@@ -46,7 +45,7 @@ start() {
 	fi
 	echo -n "Starting $prog: "
 	cd /var/lib/nova
-	/sbin/start-stop-daemon --start -b -c nova:nobody --make-pidfile --pidfile $pidfile  --exec /usr/bin/nova-$suffix -- --flagfile=$flgfile --logfile=$logfile --pidfile $pidfile
+	/sbin/start-stop-daemon --start -b -c nova:nobody --make-pidfile --pidfile $pidfile  --exec $binfile --
 	sleep 1
 	if [ -f "$pidfile" ]; then
 		checkpid `cat $pidfile`

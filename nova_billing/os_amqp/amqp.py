@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-AMQP listener
+OpenStack AMQP listener
 """
 
 import time
@@ -41,7 +41,7 @@ LOG = logging.getLogger(__name__)
 
 
 class Service(object):
-    billing_heart = utils.get_heart_client()    
+    billing_heart = utils.get_heart_client()
     heart_request_interceptors = (
         instances.create_heart_request,
         volumes.create_heart_request,                                  
@@ -119,7 +119,7 @@ class Service(object):
             routing_key = message.delivery_info["routing_key"]
         except AttributeError, KeyError:
             routing_key = "<unknown>"
-        LOG.debug("routing_key=%s method=%s%s" % (routing_key, method))
+        LOG.debug("routing_key=%s method=%s" % (routing_key, method))
 
     def get_event_datetime(self, body):
         return utils.now()

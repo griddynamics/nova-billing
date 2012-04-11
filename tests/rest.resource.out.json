@@ -1,0 +1,52 @@
+[
+    {
+        "account_id": 1, 
+        "rtype": "nova/instance", 
+        "parent_id": null, 
+        "attrs": {
+            "instance_type": "m1.small"
+        }, 
+        "id": 1, 
+        "name": "16"
+    }, 
+    {
+        "account_id": 1, 
+        "rtype": "local_gb", 
+        "parent_id": 1, 
+        "attrs": {}, 
+        "id": 2, 
+        "name": null
+    }, 
+    {
+        "account_id": 1, 
+        "rtype": "memory_mb", 
+        "parent_id": 1, 
+        "attrs": {}, 
+        "id": 3, 
+        "name": null
+    }, 
+    {
+        "account_id": 1, 
+        "rtype": "vcpus", 
+        "parent_id": 1, 
+        "attrs": {}, 
+        "id": 4, 
+        "name": null
+    }, 
+    {
+        "account_id": 1, 
+        "rtype": "nova/volume", 
+        "parent_id": null, 
+        "attrs": {}, 
+        "id": 5, 
+        "name": "12"
+    }, 
+    {
+        "account_id": 1, 
+        "rtype": "nova/volume", 
+        "parent_id": null, 
+        "attrs": {}, 
+        "id": 6, 
+        "name": "3"
+    }
+]

@@ -1,0 +1,199 @@
+[
+    {
+        "account": "systenant", 
+        "name": 16, 
+        "datetime": "2011-01-02T00:00:00Z", 
+        "attrs": {
+            "instance_type": "m1.small"
+        }, 
+        "fixed": 0, 
+        "rtype": "nova/instance", 
+        "children": [
+            {
+                "rtype": "local_gb", 
+                "linear": 20
+            }, 
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-03T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 0
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 0
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-04T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-05T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 0
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-06T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-07T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 0
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-08T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "name": 16, 
+        "datetime": "2011-01-09T00:00:00Z", 
+        "fixed": null, 
+        "rtype": "nova/instance", 
+        "children": [
+            {
+                "fixed": null, 
+                "rtype": "local_gb"
+            }, 
+            {
+                "fixed": null, 
+                "rtype": "memory_mb"
+            }, 
+            {
+                "fixed": null, 
+                "rtype": "vcpus"
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "name": 16, 
+        "datetime": "2011-01-10T00:00:00Z", 
+        "attrs": {
+            "instance_type": "m1.small"
+        }, 
+        "fixed": 0, 
+        "rtype": "nova/instance", 
+        "children": [
+            {
+                "rtype": "local_gb", 
+                "linear": 20
+            }, 
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-11T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 0
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 0
+            }
+        ]
+    }, 
+    {
+        "account": "systenant", 
+        "datetime": "2011-01-12T00:00:00Z", 
+        "rtype": "nova/instance", 
+        "name": 16, 
+        "children": [
+            {
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
+            }
+        ]
+    }
+]

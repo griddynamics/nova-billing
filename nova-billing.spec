@@ -5,9 +5,9 @@
 %define mod_name nova_billing
 
 Name:             nova-billing
-Version:          0.0.2
+Version:          2.0.0
 Release:          1
-Summary:          A nova billing server
+Summary:          A common billing server
 License:          GNU GPL v3
 Vendor:           Grid Dynamics International, Inc.
 URL:              http://www.griddynamics.com/openstack
@@ -51,7 +51,11 @@ Documentation and examples for %{name}.
 %{__python} setup.py install -O1 --skip-build --prefix=%{_prefix} --root=%{buildroot}
 export PYTHONPATH=%{buildroot}%{python_sitelib}
 make -C doc html
-install -p -D -m 755 redhat/nova-billing.init %{buildroot}%{_initrddir}/%{name}
+cd redhat
+for script in *.init; do
+    install -p -D -m 755 "$script" "%{buildroot}%{_initrddir}/${script%.init}"
+done
+cd ..
 mkdir -p %{buildroot}/etc
 cp -a etc/nova-billing %{buildroot}/etc
 
