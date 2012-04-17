@@ -1,4 +1,6 @@
 {
+    "host": "0.0.0.0",
+    "port": 8787,
     "admin_token": "999888777666",
     "billing_heart_url": "http://localhost:8080",
     "nova_url": "http://127.0.0.1:8774/v1.1",

@@ -1,22 +1,38 @@
 REST API
 ===============================
 
-Request format
+.. contents:: 
+  :depth: 2
+  :local:
+
+Overview
 --------------
 
-Nova Billing daemon supports the following forms of requests.
+Nova Billing Heart supports the following requests:
 
-1. ``GET /`` - report on available URLs and application name and version.
+* ``GET /version``;
+* ``GET /bill``;
+* ``POST /event``;
+* ``GET /tariff`` and ``POST /tariff``;
+* ``GET /resource`` and ``POST /resource``;
+* ``GET /account``.
 
-2. ``GET /projects`` - statistics for all projects if user has role Admin,
-   otherwise statistics for token's project will be returned.
+All these requests return JSON on success. Data for POST requests also must be JSON.
+We use JSON schema (http://json-schema.org/) for format description.
 
-3. ``GET /projects/{project_id}`` - statistics for requested
-   ``{project_id}``.
+Date and time are always UTC in order to avoid problems with timezones and daylight saving time.
 
-The last two forms require ``X-Auth-Token`` header to be set to a valid token value.
 
-Time period for statistics can be specified in two forms.
+Version
+-------
+
+``GET /version`` returns information about application name, version, and available URLs.
+
+Bill
+------
+``GET /bill`` returns information about charged money for requested account on requested time period by resource.
+
+Time period can be specified in two forms.
 
 1. Start and end are given explicitly with ``period_start`` 
    and ``period_end`` request parameters.
@@ -26,76 +42,17 @@ Time period for statistics can be specified in two forms.
    (``year-month-day``). All components are integers. Month and
    day numbers start with 1.
 
-If period is omitted, statistics will be for current month.
+If period is omitted, the bill will be for the current month.
 
-Date and time always is UTC in order to avoid problems with timezones and daylight saving time.
+Account should be specified by its name with ``account`` argument. 
 
-An additional request parameter ``include`` is used to specify what statistics should be returned.
-This parameter is one or two comma-separated items from the following list:
-
-* ``instances`` or ``instances-long`` - short or long statistics for instances;
-* ``images`` or ``images-long`` - short or long statistics for images.
-
-Short form contains only summary for project, long statistics has additional information about individual instances or images.
-
-Statistics for both instances and images can be retrieved by giving two comma-separated items, i.e. ``include=instances-long,images``.
-
-If ``include`` parameter is omitted, statistics for instances will be returned.
-It will be in short form for time period greater than 31 day and in long form otherwise.
-
-
-Report format
--------------
-
-All reports of Nova Billing daemon are in JSON. We use JSON schema (http://json-schema.org/) for format description.
-
-For ``GET /`` request, report has the following schema:
+Billing report has the following schema:
 
 .. code-block:: javascript
 
     {
         "type": "object", 
-        "description": "Basic application information", 
-        "properties": {
-            "application": {
-                "required": true, 
-                "type": "string", 
-                "description": "Application name"
-            }, 
-            "version": {
-                "required": true, 
-                "type": "string", 
-                "description": "Application version"
-            }, 
-            "links": {
-                "items": {
-                    "type": "object", 
-                    "description": "Available URL"
-                    "properties": {
-                        "href": {
-                            "required": true, 
-                            "type": "string"
-                        }, 
-                        "rel": {
-                            "required": true, 
-                            "type": "string" 
-                        }
-                    }
-                }, 
-                "required": false, 
-                "type": "array", 
-                "description": "Available URLs"
-            }
-        }
-    }
-
-For request on statistics, report has the following schema:
-
-.. code-block:: javascript
-
-    {
-        "type": "object", 
-        "description": "Resource usage report", 
+        "description": "Billing report", 
         "properties": {
             "period_start": {
                 "required": true, 
@@ -109,98 +66,63 @@ For request on statistics, report has the following schema:
                 "description": "The end of the requested period", 
                 "format": "date-time"
             },
-            "projects": {
+            "bill": {
                 "items": {
                     "type": "object", 
-                    "description": "Project statistics"
+                    "description": "Array of account billing reports"
                 }, 
                 "required": true, 
-                "type": "array", 
-                "description": "Statistics for all projects"
+                "type": "array"
             }
         }
     }
 
-Project statistics object has the following schema:
+Account billing report has the following schema:
 
 .. code-block:: javascript
 
     {
         "type": "object", 
-        "description": "Project statistics", 
+        "description": "Account billing report", 
         "properties": {
             "id": {
                 "required": true, 
-                "type": "string", 
-                "description": "Project ID"
+                "type": "integer", 
+                "description": "Account ID"
             }, 
             "name": {
                 "required": true, 
                 "type": "string", 
-                "description": "Project name"
+                "description": "Account name"
             },
-            "url": {
-                "required": true, 
-                "type": "string", 
-                "description": "Project URL"
-            }, 
-            "instances": {
-                "required": false, 
-                "type": "object", 
-                "description": "Project instances statistics"
-            }, 
-            "images": {
-                "required": false, 
-                "type": "object", 
-                "description": "Project images statistics"
-            }
-        }
-    }
-
-Project instances and project images statistics objects have the following schema:
-
-.. code-block:: javascript
-
-    {
-        "type": "object", 
-        "description": "Project items statistics", 
-        "properties": {
-            "count": {
-                "type": "integer", 
-                "description": "Number of items count"
-            }, 
-            "items": {
+            "resources": {
                 "items": {
                     "type": "object", 
-                    "description": "Individual item statistics"
-                },
-                "type": "array", 
-                "description": "Statistics for individual items"
-                "required": false, 
-            }, 
-            "usage": {
+                    "description": "Array of resource billing reports"
+                }, 
                 "required": true, 
-                "type": "object", 
-                "description": "Resource usage (sum for all items)"
+                "type": "array"
             }
         }
     }
 
-
-``items`` property is available for long form of statistics.
-
-Individual item statistics object has the following schema:
+Resource billing report has the following schema:
 
 .. code-block:: javascript
 
     {
         "type": "object", 
-        "description": "Individual item statistics", 
+        "description": "Resource billing report", 
         "properties": {
             "id": {
                 "required": true, 
                 "type": "integer", 
-                "description": "ID of the object"
+                "description": "Resource ID"
+            }, 
+            "rtype": {
+                "required": true, 
+                "type": "string", 
+                "description": "Resource type"
             }, 
             "name": {
                 "required": true, 
@@ -208,23 +130,21 @@ Individual item statistics object has the following schema:
                     "string", 
                     "null"
                 ], 
-                "description": "Name of the object or null if none"
+                "description": "Resource name or null if none"
             },
-            "usage": {
+            "parent_id": {
                 "required": true, 
-                "type": "object", 
-                "description": "Resource usage"
-            }, 
+                "type": [
+                    "string", 
+                    "null"
+                ], 
+                "description": "ID of resource parent or null if none"
+            },
             "created_at": {
                 "required": true, 
                 "type": "string", 
                 "description": "Date of object creation", 
                 "format": "date-time"
-            }, 
-            "lifetime_sec": {
-                "required": true, 
-                "type": "integer", 
-                "description": "Time in seconds while the object was alive during the requested time period"
             }, 
             "destroyed_at": {
                 "required": true, 
@@ -235,164 +155,328 @@ Individual item statistics object has the following schema:
                 "description": "Date of object destruction (termination) or null if not destroyed", 
                 "format": "date-time"
             }
+            "cost": {
+                "required": true, 
+                "type": "number", 
+                "description": "Billed money on the requested period"
+            }, 
         }
     }
 
-Resource usage object has the following schema:
+Example of billing report:
+
+.. code-block:: javascript
+
+    {
+        "bill": [
+            {
+                "id": 1, 
+                "name": "1", 
+                "resources": [
+                    {
+                        "cost": 0.0, 
+                        "created_at": "2012-01-19T17:37:24.024440Z", 
+                        "destroyed_at": null, 
+                        "id": 46, 
+                        "name": null, 
+                        "parent_id": 45, 
+                        "rtype": "local_gb"
+                    }, 
+                    {
+                        "cost": 8434.1570370370373, 
+                        "created_at": "2012-01-19T17:37:24.024440Z", 
+                        "destroyed_at": null, 
+                        "id": 47, 
+                        "name": null, 
+                        "parent_id": 45, 
+                        "rtype": "memory_mb"
+                    }, 
+                    {
+                        "cost": 16.472962962962963, 
+                        "created_at": "2012-01-19T17:37:24.024440Z", 
+                        "destroyed_at": null, 
+                        "id": 48, 
+                        "name": null, 
+                        "parent_id": 45, 
+                        "rtype": "vcpus"
+                    }, 
+                    {
+                        "cost": 0.0, 
+                        "created_at": "2012-01-19T17:37:24.024440Z", 
+                        "destroyed_at": null, 
+                        "id": 45, 
+                        "name": "12", 
+                        "parent_id": null, 
+                        "rtype": "nova/instance"
+                    },  
+                    {
+                        "cost": 72559316.557037041, 
+                        "created_at": "2012-01-19T16:23:20.293482Z", 
+                        "destroyed_at": null, 
+                        "id": 75, 
+                        "name": "22", 
+                        "parent_id": null, 
+                        "rtype": "glance/image"
+                    }
+                ]
+            }
+        ], 
+        "period_end": "2012-05-01T00:00:00Z", 
+        "period_start": "2012-04-01T00:00:00Z"
+    }
+
+
+Examples of billing queries.
+
+In these examples, ``999888777666`` is assumed to be a valid Admin's token.
+
+Bill for account ``1`` on 2012 year:
+
+.. code-block:: bash
+
+    $ curl "http://localhost:8787/bill?account=1&time_period=2012" -H "X-Auth-Token: 999888777666"
+
+Bill for all accounts on December, 2012:
+
+.. code-block:: bash
+
+    $ curl "http://localhost:8787/bill?time_period=2012-12" -H "X-Auth-Token: 999888777666"
+
+Bill for account ``2`` from ``2012-01-01 00:00:00`` till ``2012-01-01 01:00:00``:
+
+.. code-block:: bash
+
+    $ curl "http://localhost:8787/bill?account=2&period_start=2012-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" -H "X-Auth-Token: 999888777666"
+
+    
+Event
+-----
+
+``POST /event`` notifies the Heart about a new event.
+All appropriate resources and accounts will be created lazily, so, there is no need to create a resource before posting an event.
+
+Request data has the following schema:
 
 .. code-block:: javascript
 
     {
         "type": "object", 
-        "description": "Resource usage", 
+        "description": "Resource event", 
         "properties": {
-            "local_gb_h": {
+            "account": {
                 "required": false, 
-                "type": "number", 
-                "description": "Hard drive usage (GB * h)"
+                "type": "integer", 
+                "description": "Account name"
             }, 
-            "vcpus_h": {
+            "datetime": {
+                "required": true, 
+                "type": "string", 
+                "description": "Event datatime", 
+                "format": "date-time"
+            },            
+            "name": {
                 "required": false, 
-                "type": "number", 
-                "description": "CPU usage (number of CPUs * h)"
-            }, 
-            "memory_mb_h": {
+                "type": "string", 
+                "description": "Resource name"
+            },
+            "rtype": {
+                "required": true, 
+                "type": "string", 
+                "description": "Resource type"
+            },
+            "attrs": {
                 "required": false, 
+                "type": "object",
+                "description": "Dictionary of resource attributes that should be set"
+            },
+            "linear": {
+                "required": true, 
                 "type": "number", 
-                "description": "RAM usage (MB * h)"
+                "description": "Linear price for the resource"
+            },
+            "fixed": {
+                "required": true, 
+                "type": ["number", "null"], 
+                "description": "Fixed price for the resource or null to stop charging"
+            },
+            "children": {
+                "items": {
+                    "type": "object", 
+                    "description": "Array of events of child resources"
+                }, 
+                "required": false, 
+                "type": "array"
             }
         }
     }
 
-If a property of resource usage object is omitted, it means that its value is zero.
+``account`` and ``datatime`` should be present for the root resource event. They are ignored for all child resources.
+``account`` can be omitted for the root resource event if the resource is already created.
+
+``linear`` and ``fixed`` attributes control charging schemas for resources. They are mutually exclusive. 
+
+* For fixed schema, charged money is the product of resource type tariff and the provided ``fixed`` value.
+* For linear schema, charged money is the product of resource type tariff, the provided ``linear`` value, and
+  period length in days.
+
+If no tariff is stored for the given resource type, it will be assumed to be 1.
 
 
-Examples
---------
-
-In these examples, ``999888777666`` is assumed to be a valid Admin's token.
-
-Instances statistics for ``1`` project on 2011 year:
-
-.. code-block:: javascript
-
-    $ curl "http://localhost:8787/projects/1?time_period=2011" -H "X-Auth-Token: 999888777666" | python -mjson.tool
-    {
-        "period_end": "2012-01-01T00:00:00Z", 
-        "period_start": "2011-01-01T00:00:00Z", 
-        "projects": [
-            {
-                "instances": {
-                    "count": 7, 
-                    "usage": {
-                        "local_gb_h": 68495.83333333333, 
-                        "memory_mb_h": 7013973.333333333, 
-                        "vcpus_h": 3424.7916666666665
-                    }
-                }, 
-                "id": "1", 
-                "name": "systenant",
-                "url": "http://127.0.0.1:8787/projects/1"
-            }
-        ]
-    }
-
-
-Instances statistics for all projects on December, 2011:
+Request data example:
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects?time_period=2011-12" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
-        "period_end": "2012-01-01T00:00:00Z", 
-        "period_start": "2011-12-01T00:00:00Z", 
-        "projects": [
+        "account": "2", 
+        "name": 16, 
+        "datetime": "2011-01-02T00:00:00Z", 
+        "attrs": {
+            "instance_type": "m1.small"
+        }, 
+        "fixed": 0, 
+        "rtype": "nova/instance", 
+        "children": [
             {
-                "instances": {
-                    "count": 7, 
-                    "usage": {
-                        "local_gb_h": 68495.83333333333, 
-                        "memory_mb_h": 7013973.333333333, 
-                        "vcpus_h": 3424.7916666666665
-                    }
-                }, 
-                "id": "1", 
-                "name": "systenant",
-                "url": "http://127.0.0.1:8787/projects/1"
+                "rtype": "local_gb", 
+                "linear": 20
             }, 
             {
-                "instances": {
-                    "count": 0, 
-                    "usage": {}
-                }, 
-                "id": "2", 
-                "name": "tenant2",
-                "url": "http://127.0.0.1:8787/projects/2"
+                "rtype": "memory_mb", 
+                "linear": 2048
+            }, 
+            {
+                "rtype": "vcpus", 
+                "linear": 1
             }
         ]
     }
 
-Images statistics (long form) for project 2 on from 2011-01-01 00:00:00 till 2012-01-01 01:00:00:
+Here a virtual machine instance will be charged. Its disk, RAM, and CPU will be charged after linear scheme.
+Its instance type is ``m1.small`` (this attribute can be retrieved with ``GET /resource`` call).
+
+
+Tariff
+------
+Tariffs can be retrieved with ``GET /tariff`` and set with ``POST /tariff``. Tariff name equals to the corresponding resource type.
+
+Setting request data has the following schema:
 
 .. code-block:: javascript
 
-    $ curl "http://localhost:8787/projects/2?include=images-long&period_start=2011-01-01T00%3A00%3A00Z&period_end=2012-01-01T01%3A00%3A00Z" -H "X-Auth-Token: 999888777666" | python -mjson.tool
     {
-        "period_end": "2012-01-01T00:00:00Z", 
-        "period_start": "2011-01-01T01:00:00Z", 
-        "projects": [
-            {
-                "images": {
-                    "count": 4, 
-                    "items": [
-                        {
-                            "created_at": "2011-12-28T16:25:21.852159Z", 
-                            "destroyed_at": null, 
-                            "id": 1, 
-                            "lifetime_sec": 286478, 
-                            "name": "SL61_ramdisk", 
-                            "usage": {
-                                "local_gb_h": 0.0011111111111111111
-                            }
-                        }, 
-                        {
-                            "created_at": "2011-12-28T16:25:22.615385Z", 
-                            "destroyed_at": null, 
-                            "id": 2, 
-                            "lifetime_sec": 286477, 
-                            "name": "SL61_kernel", 
-                            "usage": {
-                                "local_gb_h": 0.2875
-                            }
-                        }, 
-                        {
-                            "created_at": "2011-12-28T16:25:23.376856Z", 
-                            "destroyed_at": null, 
-                            "id": 3, 
-                            "lifetime_sec": 286476, 
-                            "name": "SL61", 
-                            "usage": {
-                                "local_gb_h": 16.071666666666665
-                            }
-                        }, 
-                        {
-                            "created_at": "2011-12-29T08:04:07.497591Z", 
-                            "destroyed_at": null, 
-                            "id": 4, 
-                            "lifetime_sec": 230152, 
-                            "name": "ramdisk2", 
-                            "usage": {
-                                "local_gb_h": 0.0008333333333333334
-                            }
-                        }
-                    ], 
-                    "usage": {
-                        "local_gb_h": 16.36111111111111
-                    }
-                }, 
-                "id": "2", 
-                "name": "tenant2",
-                "url": "http://127.0.0.1:8787/projects/2"
+        "type": "object", 
+        "properties": {
+            "datetime": {
+                "required": true, 
+                "type": "string", 
+                "description": "Since that datatime tariffs are changed", 
+                "format": "date-time"
+            },            
+            "migrate": {
+                "required": false, 
+                "type": "boolean", 
+                "description": "Whether all currently charging resources should migrate to the new tariffs"
+            },
+            "values": {
+                "required": false, 
+                "type": "object",
+                "description": "Dictionary of the new tariffs"
             }
-        ]
+        }
     }
+
+Setting tariff example:
+ 
+.. code-block:: javascript
+
+    {
+        "datetime": "2010-01-01T00:00:00.000000Z",
+        "migrate": false,
+        "values": {
+            "local_gb": 2.0,
+            "memory_mb": 3.0,
+            "vcpus": 0.5,
+            "glance/image": 1.0
+        }
+    }
+
+Response to ``GET /tariff`` is a tariff dictionary and looks like this:
+
+.. code-block:: javascript
+
+    {
+        "local_gb": 2.0,
+        "memory_mb": 3.0,
+        "vcpus": 0.5,
+        "glance/image": 1.0
+    }
+
+Resource
+--------
+
+Resources can be retrieved with ``GET /resource`` and set with ``POST /resource``.
+
+Setting request data schema is nearly the same as post event schema.
+The difference is that ``datetime``, ``linear``, and ``fixed`` attributes
+are not used. 
+
+Response to ``GET /resource`` is an array of resource objects and looks like this:
+
+.. code-block:: javascript
+
+    [
+        {
+            "account_id": 1, 
+            "rtype": "nova/instance", 
+            "parent_id": null, 
+            "attrs": {
+                "instance_type": "m1.small"
+            }, 
+            "id": 1, 
+            "name": "16"
+        }, 
+        {
+            "account_id": 1, 
+            "rtype": "local_gb", 
+            "parent_id": 1, 
+            "attrs": {}, 
+            "id": 2, 
+            "name": null
+        }, 
+        {
+            "account_id": 1, 
+            "rtype": "memory_mb", 
+            "parent_id": 1, 
+            "attrs": {}, 
+            "id": 3, 
+            "name": null
+        }, 
+        {
+            "account_id": 1, 
+            "rtype": "vcpus", 
+            "parent_id": 1, 
+            "attrs": {}, 
+            "id": 4, 
+            "name": null
+        }
+    ]
+    
+Account
+-------
+
+Resources can be retrieved with ``GET /account``.
+
+Response is an array of account objects and looks like this:
+
+.. code-block:: javascript
+
+    [
+        {
+            "id": 1, 
+            "name": "4"
+        }
+        {
+            "id": 2, 
+            "name": "35"
+        }
+    ]

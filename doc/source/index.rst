@@ -6,13 +6,15 @@
 Welcome to nova-billing's documentation!
 ========================================
 
-Contents:
-
-User Docs
+Contents
 ---------
+
 .. toctree::
    :maxdepth: 1
 
    quickstart
+   whatsnew
+   glossary
+   architecture
    restapi
    config

@@ -1,0 +1,61 @@
+digraph G {
+        fontname = "Bitstream Vera Sans"
+        fontsize = 8
+
+        node [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 8
+                shape = "record"
+        ]
+
+        edge [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 8
+        ]
+
+
+        subgraph clusterGlance {
+                label = "Glance"
+                BillingGlance [
+                        label = "{Billing Glance Middleware}"
+                ]
+        }
+
+        RabbitMQ [
+                label = "{Rabbit MQ}"
+        ]
+
+        BillingHeart [
+                label = "{Billing Heart}"
+        ]
+
+        BillingOsAmqp [
+                label = "{Billing OS AMPQ}"
+        ]
+
+        NovaApi [
+                label = "{Nova API}"
+        ]
+
+        NovaCompute [
+                label = "{Nova Compute}"
+        ]
+
+        edge [
+                arrowhead = "empty"
+        ]
+
+        BillingOsAmqp -> RabbitMQ
+        NovaApi -> RabbitMQ
+        NovaCompute -> RabbitMQ
+
+        NovaApi -> clusterGlance
+
+        BillingOsAmqp -> BillingHeart
+        BillingGlance -> BillingHeart
+        
+        edge [
+                arrowhead = "none"
+        ]
+
+}

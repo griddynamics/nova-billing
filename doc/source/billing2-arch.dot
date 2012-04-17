@@ -1,0 +1,45 @@
+digraph G {
+        compound=true;
+        fontname = "Bitstream Vera Sans"
+        fontsize = 8
+
+        node [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 8
+                shape = "record"
+        ]
+
+        edge [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 8
+        ]
+
+        BillingHeart [
+                label = "{Billing Heart}"
+        ]
+        
+        BillingDatabase [
+                label = "{Billing Database}"
+        ]
+
+        subgraph clusterPeripherals {
+                label = "Billing Peripherals"
+                BillingGlance [
+                    label = "{Billing Glance Middleware}"
+                ]
+ 
+                BillingOsAmqp [
+                    label = "{Billing OS AMPQ}"
+                ]
+        }
+
+        edge [
+                arrowhead = "empty"
+        ]
+
+        BillingOsAmqp -> BillingHeart
+        BillingGlance -> BillingHeart
+        
+        BillingHeart -> BillingDatabase
+
+}

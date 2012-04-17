@@ -1,15 +1,40 @@
+Overview
+===========================
+
+The billing server stores state information for miscellaneous resources
+(instances, volumes, images, etc.) in a database and generates reports
+accessed by REST API.
+
+
+Configuration
+===========================
+
+By default, the billing Heart server uses ``/var/lib/nova/nova_billing.sqlite`` database 
+and listens port 8787. That can be changed in ``/etc/nova-billing/settings.json``.
+
+
+RPM Building
+===========================
+
+Clone the nova-billing git repository, rename the top dir to nova-billing-2.0.0,
+and tar it to nova-billing-2.0.0.tar.gz. Place it to rpmbuild/SOURCES
+directory and run::
+
+    $ rpmbuild -ba nova-billing.spec
+
+
 Quickstart
 ===========================
 
 Install the package:
 
-.. code-block:: bash
+::
 
     # yum install nova-billing
 
 Start the servers:
 
-.. code-block:: bash
+::
 
     # /etc/init.d/nova-billing-heart start
     # /etc/init.d/nova-billing-os-amqp start
@@ -25,7 +50,7 @@ Try to run or terminate an instance and check that the daemon returns reports
 
 Its output should look like this:
 
-.. code-block:: javascript
+::
 
     {
         "bill": [
