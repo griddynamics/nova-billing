@@ -18,6 +18,7 @@ BuildRoot:        %{_tmppath}/%{name}-%{version}-build
 BuildRequires:    python-devel python-setuptools make
 BuildArch:        noarch
 Requires:         python-nova python-keystoneclient python-glance openstack-keystone
+Requires:         python-flask python-flask-sqlalchemy
 Requires:         start-stop-daemon
 
 %description
@@ -62,23 +63,23 @@ cp -a etc/nova-billing %{buildroot}/etc
 %clean
 %__rm -rf %{buildroot}
 
-%post
-/sbin/chkconfig --add %{name}
 
 %preun
 if [ $1 -eq 0 ] ; then
     /sbin/service %{name} stop >/dev/null 2>&1
-    /sbin/chkconfig --del %{name}
+    /sbin/chkconfig --del %{name}-heart
+    /sbin/chkconfig --del %{name}-os-amqp
 fi
 
 %postun
 if [ $1 -eq 1 ] ; then
-    /sbin/service %{name} condrestart
+    /sbin/service %{name}-heart condrestart
+    /sbin/service %{name}-os-amqp condrestart
 fi
 
 %files
 %defattr(-,root,root,-)
-%doc README
+%doc README.rst
 %{_initrddir}/*
 %{python_sitelib}/%{mod_name}*
 %{_usr}/bin/*
