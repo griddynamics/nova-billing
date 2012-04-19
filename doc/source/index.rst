@@ -12,9 +12,9 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   quickstart
-   whatsnew
    glossary
    architecture
+   quickstart
+   whatsnew
    restapi
    config

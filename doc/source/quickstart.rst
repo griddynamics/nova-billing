@@ -16,7 +16,13 @@ Start the servers:
 
 Now instance state changes will be stored to a database.
 
-Try to run or terminate an instance and check that the daemon returns reports
+Configure Glance to use `Nova Billing Glance Middleware <config.html#nova-billing-glance>`_ and restart glance-api:
+
+.. code-block:: bash
+
+    # /etc/init.d/glance-api restart
+
+Try to run or terminate an instance or create or remove a glance image. Then you can check that the daemon returns reports
 (replace ``999888777666`` with a valid Admin's token):
 
 .. code-block:: bash

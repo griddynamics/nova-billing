@@ -43,4 +43,3 @@ and mention this filter in ``glance-api`` pipeline:
 
     [pipeline:glance-api]
     pipeline = versionnegotiation authtoken auth-context billing apiv1app
-  

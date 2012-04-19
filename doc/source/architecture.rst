@@ -22,6 +22,8 @@ This information includes resources, accounts, events, and tariffs.
 The Heart is not tied to particular resource types (i.e. instances, images, floating IPs, etc.). It allows to save
 and retrieve information of resource of any type.
 
+The Heart saves information about current tariffs, but not about their historical changes.
+
 The Heart provides bills for requested accounts. A bill includes information about charged money on the requested time period.
 
 
