@@ -42,7 +42,7 @@ class GlanceBillingFilter(object):
             except KeyError:
                 return resp
             heart_request = {"name": img_id,
-                             "linear": img_size}
+                             "linear": img_size / (1024.0 ** 3)}
         elif method == "DELETE":
             heart_request = {"name": path_info[len("/images/"):],
                              "fixed": None}

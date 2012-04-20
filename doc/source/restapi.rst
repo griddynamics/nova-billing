@@ -317,7 +317,7 @@ Request data has the following schema:
 
 * For fixed schema, charged money is the product of resource type tariff and the provided ``fixed`` value.
 * For linear schema, charged money is the product of resource type tariff, the provided ``linear`` value, and
-  period length in days.
+  period length in years.
 
 If no tariff is stored for the given resource type, it will be assumed to be 1.
 

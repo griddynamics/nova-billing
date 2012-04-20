@@ -66,11 +66,13 @@ def migrate_images(glance_url):
     tariffs = db_api.tariff_map()
     accounts = {}
     images = json.loads(glance_client.get("/images/detail"))["images"]
-    for project_id in (img1["owner"] for img1 in images):
+    for project_id in (img1["owner"] for img1 in images if img1["owner"]):
         accounts[project_id] = \
             db_api.account_get_or_create(project_id).id
     
     for img1 in images:
+        if not img1["owner"]:
+            continue
         account_id = accounts[img1["owner"]]
         img2 = db_api.resource_get_or_create(
             account_id, None,
@@ -79,7 +81,7 @@ def migrate_images(glance_url):
         )
         seg = Segment(
             resource_id=img2.id,
-            cost=img1["size"] * tariffs.get(ResourceTypes.Image, 1),
+            cost=img1["size"] * tariffs.get(ResourceTypes.Image, 1) / (1024.0 ** 3),
             begin_at=utils.str_to_datetime(img1["created_at"]),
             end_at=utils.str_to_datetime(img1["deleted_at"]))
         db.session.add(seg)
@@ -155,7 +157,7 @@ def migrate_instances(old_db_url):
     for inst_dict in instance_infos.values():
         seg = Segment(
             resource_id=inst_dict["inst2"].id,
-            cost=0,
+            cost=tariffs.get("nova/instance", 0),
             begin_at=inst_dict.get("begin_at", None),
             end_at=inst_dict.get("end_at", None))
         db.session.add(seg)

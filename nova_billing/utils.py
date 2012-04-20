@@ -75,13 +75,6 @@ def datetime_to_str(dt):
     return ("%sZ" % dt.isoformat()) if isinstance(dt, datetime) else None
 
 
-def usage_to_hours(usage):
-    """
-    Convert usage measured for seconds to hours.
-    """
-    return dict([(key + "_h", usage[key] / 3600.0) for key in usage])
-
-
 def dict_add(a, b):
     """
     Increment all keys in ``a`` on keys in ``b``.
@@ -91,8 +84,8 @@ def dict_add(a, b):
 
 
 def cost_add(cost, begin_at, end_at):
-    # 3600 * 24 == 86400
-    return cost if cost < 0 else cost * total_seconds(end_at - begin_at) / 86400.0
+    # 31556952 seconds - an average Gregorian year
+    return cost if cost < 0 else cost * total_seconds(end_at - begin_at) / 31556952.0
 
 
 try:

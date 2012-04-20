@@ -113,7 +113,12 @@ class Service(object):
                 heart_request.setdefault("datetime", utils.datetime_to_str(
                     self.get_event_datetime(body)))
                 heart_request.setdefault("account", body["_context_project_id"])
-                self.billing_heart.event(heart_request)
+                try:
+                    self.billing_heart.event(heart_request)
+                except socket.error as ex:
+                    LOG.error("cannot post event to the Heart: %s" % str(ex))
+                except:
+                    LOG.exception("cannot post event to the Heart")
                 break
         try:
             routing_key = message.delivery_info["routing_key"]
