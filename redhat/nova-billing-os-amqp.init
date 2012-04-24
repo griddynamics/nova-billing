@@ -46,7 +46,7 @@ start() {
 	fi
 	echo -n "Starting $prog: "
 	cd /var/lib/nova
-	/sbin/start-stop-daemon --start -b -c nova:nobody --make-pidfile --pidfile $pidfile  --exec $binfile -- --flagfile=$flgfile --logfile=$logfile --pidfile $pidfile
+	/sbin/start-stop-daemon --start -b -c nova:nobody --make-pidfile --pidfile $pidfile  --exec $binfile --
 	sleep 1
 	if [ -f "$pidfile" ]; then
 		checkpid `cat $pidfile`

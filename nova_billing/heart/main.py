@@ -20,7 +20,6 @@
 """Starter script for Nova Billing heart."""
 
 import argparse
-import logging
 
 from nova_billing.heart.database import db
 from nova_billing.heart import app
@@ -38,8 +37,7 @@ def main():
                                 global_conf.port),
                             help="host:port")
     args = arg_parser.parse_args()
-    
-    logging.basicConfig(level=getattr(logging, global_conf.logging_level))
+
     db.create_all()
     listen = getattr(args, "host:port").split(':')
     app.debug = True

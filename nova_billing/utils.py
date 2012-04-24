@@ -24,9 +24,15 @@ Miscellaneous utility functions:
 """
 
 import json
+import logging
+import sys
+import os
 from datetime import datetime
 
 from nova_billing.client import BillingHeartClient
+
+
+LOG = logging.getLogger(__name__)
 
 
 class ContentType(object):
@@ -75,6 +81,13 @@ def datetime_to_str(dt):
     return ("%sZ" % dt.isoformat()) if isinstance(dt, datetime) else None
 
 
+def usage_to_hours(usage):
+    """
+    Convert usage measured for seconds to hours.
+    """
+    return dict([(key + "_h", usage[key] / 3600.0) for key in usage])
+
+
 def dict_add(a, b):
     """
     Increment all keys in ``a`` on keys in ``b``.
@@ -88,18 +101,15 @@ def cost_add(cost, begin_at, end_at):
     return cost if cost < 0 else cost * total_seconds(end_at - begin_at) / 31556952.0
 
 
-try:
-    from nova import flags
-    FLAGS = flags.FLAGS
-except ImportError:
-    FLAGS = object()
-
-
 class GlobalConf(object):
+    _FLAGS = object()
     _conf = {
         "host": "127.0.0.1",
         "port": 8787,
-        "logging_level": "DEBUG",
+        "log_dir": "/var/log/nova",
+        "log_format": "%(asctime)-15s:nova-billing:%(levelname)s:%(name)s:%(message)s",
+        "log_level": "DEBUG",
+        "nova_conf": "nova.conf",
     }
 
     def load_from_file(self, filename):
@@ -109,13 +119,23 @@ class GlobalConf(object):
         except:
             pass
 
+    def load_nova_conf(self):
+        try:
+            from nova import flags
+            from nova import utils
+            utils.default_flagfile(self.nova_conf)
+            flags.FLAGS(sys.argv)
+            self._FLAGS = flags.FLAGS
+        except Exception:
+            LOG.exception("cannot load nova flags")
+
     def __getattr__(self, name):
         try:
             return self._conf[name]
         except KeyError:
             pass
         try:
-            return getattr(FLAGS, name)
+            return getattr(self._FLAGS, name)
         except AttributeError:
             pass
         raise AttributeError(name)
@@ -123,6 +143,29 @@ class GlobalConf(object):
 
 global_conf = GlobalConf()
 global_conf.load_from_file("/etc/nova-billing/settings.json")
+
+
+def setup_logging(log_dir, format, level):
+    log_name = os.path.basename(sys.argv[0])
+    if not log_name:
+        log_name = "unknown"
+    handler = logging.FileHandler("%s/%s.log" % (log_dir, log_name))
+    handler.setFormatter(logging.Formatter(format))
+    LOG = logging.getLogger()
+    LOG.addHandler(handler)
+    LOG.setLevel(level)
+
+
+def get_logging_level(name):
+    if name in ("DEBUG", "INFO", "WARN", "ERROR"):
+        return getattr(logging, name)
+    return logging.DEBUG
+
+
+setup_logging(
+    global_conf.log_dir,
+    global_conf.log_format,
+    get_logging_level(global_conf.log_level))
 
 
 def get_heart_client():

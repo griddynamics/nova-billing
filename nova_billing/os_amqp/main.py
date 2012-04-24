@@ -22,30 +22,14 @@
 import eventlet
 eventlet.monkey_patch()
 
-import os
-import sys
-
-
-possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
-        sys.argv[0]), os.pardir, os.pardir))
-if os.path.exists(os.path.join(possible_topdir, "nova", "__init__.py")):
-    sys.path.insert(0, possible_topdir)
-
-
-from nova import flags
-from nova import wsgi
-from nova import log as logging
-from nova import service
-from nova import utils
-
 from nova_billing.os_amqp import amqp
+from nova_billing.utils import global_conf
+
 
 def main():
-    utils.default_flagfile()
-    flags.FLAGS(sys.argv)
-    logging.setup()
-#    utils.monkey_patch()
-    service.serve(amqp.Service())
+    global_conf.load_nova_conf()
+    service = amqp.Service()
+    service.start()
     service.wait()
 
 
