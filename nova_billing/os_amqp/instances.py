@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from nova_billing import utils
+from nova_billing.utils import global_conf
 
 
 class vm_states(object):
@@ -37,10 +38,10 @@ class vm_states(object):
 
 
 used_resources = {
-    vm_states.ACTIVE: ("memory_mb", "vcpus"),
-    vm_states.SUSPENDED: ("memory_mb"),
-    vm_states.PAUSED: ("memory_mb"),
-    vm_states.STOPPED: ( ),
+    vm_states.ACTIVE: ("memory_mb", "vcpus", "local_gb"),
+    vm_states.SUSPENDED: ("memory_mb", "local_gb"),
+    vm_states.PAUSED: ("memory_mb", "local_gb"),
+    vm_states.STOPPED: ("local_gb", ),
 }
 
 
@@ -100,28 +101,30 @@ def create_heart_request(method, body):
     except KeyError:
         return None
 
-    heart_request = {
-        "rtype": "nova/instance",
-        "name": body["args"]["instance_id"],
-    }
+    heart_request = {"rtype": "nova/instance"}
+    try:
+        heart_request["name"] = body["args"]["instance_uuid"]
+    except KeyError:
+        heart_request["name"] = body["args"]["instance_id"]
     child_keys = ("local_gb", "memory_mb", "vcpus")
-    if method == "run_instance":
-        heart_request["fixed"] = 0
-        instance_type = body["args"]["request_spec"]["instance_type"] 
-        heart_request["attrs"] = { "instance_type": instance_type["name"] }
-        heart_request["children"] = [
-            {"rtype": key, "linear": instance_type[key]}
-            for key in child_keys]
-    elif method == "terminate_instance":
+    if method == "terminate_instance":
         heart_request["fixed"] = None
         heart_request["children"] = [
             {"rtype": key, "fixed": None}
             for key in child_keys]
     else:
         used = used_resources[state]
-        flav = get_instance_flavor(body["args"]["instance_id"])
+        try:
+            flav = body["args"]["request_spec"]["instance_type"]
+        except KeyError:
+            flav = get_instance_flavor(heart_request["name"])
+        if method == "run_instance":
+            heart_request["fixed"] = 0
+            heart_request["attrs"] = {"instance_type": flav["name"]}
+        else:
+            child_keys = child_keys[1:]
         heart_request["children"] = [
-            {"rtype": key,
-             "linear": flav[key] if key in used else 0}
-            for key in ("memory_mb", "vcpus")]
+            {"rtype": key, "linear": flav[key] if key in used else 0}
+            for key in child_keys
+        ]
     return heart_request
