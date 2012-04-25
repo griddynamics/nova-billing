@@ -27,6 +27,7 @@ from nova_billing.utils import global_conf
 
 
 def main():
+    global_conf.logging()
     global_conf.load_nova_conf()
     service = amqp.Service()
     service.start()

@@ -17,7 +17,6 @@ Source0:          %{name}-%{version}.tar.gz
 BuildRoot:        %{_tmppath}/%{name}-%{version}-build
 BuildRequires:    python-devel python-setuptools make
 BuildArch:        noarch
-Requires:         python-nova python-keystoneclient python-glance openstack-keystone
 Requires:         python-flask python-flask-sqlalchemy
 Requires:         start-stop-daemon
 

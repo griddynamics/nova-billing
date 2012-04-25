@@ -140,12 +140,18 @@ class GlobalConf(object):
             pass
         raise AttributeError(name)
 
+    def logging(self):
+        setup_logging(self.log_dir,
+                      self.log_format,
+                      self.log_level)
+
 
 global_conf = GlobalConf()
 global_conf.load_from_file("/etc/nova-billing/settings.json")
 
 
 def setup_logging(log_dir, format, level):
+    level = get_logging_level(level)
     log_name = os.path.basename(sys.argv[0])
     if not log_name:
         log_name = "unknown"
@@ -160,12 +166,6 @@ def get_logging_level(name):
     if name in ("DEBUG", "INFO", "WARN", "ERROR"):
         return getattr(logging, name)
     return logging.DEBUG
-
-
-setup_logging(
-    global_conf.log_dir,
-    global_conf.log_format,
-    get_logging_level(global_conf.log_level))
 
 
 def get_heart_client():

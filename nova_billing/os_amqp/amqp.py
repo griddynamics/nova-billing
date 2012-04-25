@@ -96,7 +96,7 @@ class Service(object):
     def process_message(self, body, message):
         try:
             self.process_event(body, message)
-        except KeyError, ex:
+        except:
             LOG.exception("Cannot handle message")
         message.ack()
 

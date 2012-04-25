@@ -27,6 +27,8 @@ from nova_billing.utils import global_conf
 
 
 def main():
+    global_conf.logging()
+
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--reload", "-r", default=False,
                             action="store_true",

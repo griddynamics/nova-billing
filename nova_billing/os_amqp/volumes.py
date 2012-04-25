@@ -30,7 +30,7 @@ def create_heart_request(method, body):
     
     heart_request = {
         "rtype": "nova/volume",
-        "name": body["args"]["volume_id"],       
+        "name": body["args"]["volume_id"],
     }
 
     if method == "create_local_volume":        
