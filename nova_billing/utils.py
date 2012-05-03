@@ -106,7 +106,7 @@ class GlobalConf(object):
     _conf = {
         "host": "127.0.0.1",
         "port": 8787,
-        "log_dir": "/var/log/nova",
+        "log_dir": "/var/log/nova-billing",
         "log_format": "%(asctime)-15s:nova-billing:%(levelname)s:%(name)s:%(message)s",
         "log_level": "DEBUG",
         "nova_conf": "nova.conf",
@@ -141,31 +141,29 @@ class GlobalConf(object):
         raise AttributeError(name)
 
     def logging(self):
-        setup_logging(self.log_dir,
-                      self.log_format,
-                      self.log_level)
+        try:
+            log_file = self.log_file
+        except AttributeError:
+            log_name = os.path.basename(sys.argv[0])
+            if not log_name:
+                log_name = "unknown"
+            log_file = "%s/%s.log" % (self.log_dir, log_name)
+
+        def get_logging_level(name):
+            if name in ("DEBUG", "INFO", "WARN", "ERROR"):
+                return getattr(logging, name)
+            return logging.DEBUG
+
+        level = get_logging_level(self.log_level)
+        handler = logging.FileHandler(log_file)
+        handler.setFormatter(logging.Formatter(self.log_format))
+        LOG = logging.getLogger()
+        LOG.addHandler(handler)
+        LOG.setLevel(level)
 
 
 global_conf = GlobalConf()
 global_conf.load_from_file("/etc/nova-billing/settings.json")
-
-
-def setup_logging(log_dir, format, level):
-    level = get_logging_level(level)
-    log_name = os.path.basename(sys.argv[0])
-    if not log_name:
-        log_name = "unknown"
-    handler = logging.FileHandler("%s/%s.log" % (log_dir, log_name))
-    handler.setFormatter(logging.Formatter(format))
-    LOG = logging.getLogger()
-    LOG.addHandler(handler)
-    LOG.setLevel(level)
-
-
-def get_logging_level(name):
-    if name in ("DEBUG", "INFO", "WARN", "ERROR"):
-        return getattr(logging, name)
-    return logging.DEBUG
 
 
 def get_heart_client():

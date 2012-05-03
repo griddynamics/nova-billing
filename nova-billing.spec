@@ -58,9 +58,19 @@ done
 cd ..
 mkdir -p %{buildroot}/etc
 cp -a etc/nova-billing %{buildroot}/etc
+mkdir -p %{buildroot}%{_localstatedir}/{log,lib,run}/nova-billing
+
 
 %clean
 %__rm -rf %{buildroot}
+
+
+%pre
+getent group nova-billing >/dev/null || groupadd -r nova-billing
+getent passwd nova-billing >/dev/null || \
+useradd -r -g nova-billing -d %{_sharedstatedir}/nova-billing -s /sbin/nologin \
+-c "Nova Billing Daemons" nova-billing
+exit 0
 
 
 %preun
@@ -69,12 +79,16 @@ if [ $1 -eq 0 ] ; then
     /sbin/chkconfig --del %{name}-heart
     /sbin/chkconfig --del %{name}-os-amqp
 fi
+exit 0
+
 
 %postun
 if [ $1 -eq 1 ] ; then
     /sbin/service %{name}-heart condrestart
     /sbin/service %{name}-os-amqp condrestart
 fi
+exit 0
+
 
 %files
 %defattr(-,root,root,-)
@@ -83,6 +97,12 @@ fi
 %{python_sitelib}/%{mod_name}*
 %{_usr}/bin/*
 %config(noreplace) /etc/nova-billing
+
+%defattr(0775,nova-billing,nova-billing,-)
+%dir %{_sharedstatedir}/nova-billing
+%dir %{_localstatedir}/log/nova-billing
+%dir %{_localstatedir}/run/nova-billing
+
 
 %files doc
 %defattr(-,root,root,-)

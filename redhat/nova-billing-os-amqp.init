@@ -4,7 +4,7 @@
 #
 # chkconfig: 2345 96 04
 #
-# config: /etc/nova/nova.conf
+# config: /etc/nova/nova.conf, /etc/nova-billing/settings.json
 # pidfile: /var/run/nova/nova-billing-os-amqp.pid
 
 ### BEGIN INIT INFO
@@ -26,11 +26,10 @@
 
 prog="Nova Billing OS AMQP Server"
 suffix="billing-os-amqp"
-flgfile=/etc/nova/nova.conf
-logfile=/var/log/nova/nova-$suffix.log
-pidfile=/var/run/nova/nova-$suffix.pid
+pidfile=/var/run/nova-billing/nova-$suffix.pid
 lckfile=/var/lock/subsys/nova-$suffix
 binfile=/usr/bin/nova-$suffix
+
 
 start() {
 	if [ -f "$pidfile" ]; then
@@ -45,8 +44,9 @@ start() {
 		fi
 	fi
 	echo -n "Starting $prog: "
-	cd /var/lib/nova
-	/sbin/start-stop-daemon --start -b -c nova:nobody --make-pidfile --pidfile $pidfile  --exec $binfile --
+	cd ~nova-billing
+	getent passwd nova >/dev/null && OS_USER=nova || OS_USER=nova-billing 
+	/sbin/start-stop-daemon --start -b -c $OS_USER:nova-billing --make-pidfile --pidfile $pidfile  --exec $binfile --
 	sleep 1
 	if [ -f "$pidfile" ]; then
 		checkpid `cat $pidfile`

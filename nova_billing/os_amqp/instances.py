@@ -16,8 +16,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from nova_billing import utils
 from nova_billing.utils import global_conf
+
+
+LOG = logging.getLogger(__name__)
 
 
 class vm_states(object):
@@ -102,10 +106,22 @@ def create_heart_request(method, body):
         return None
 
     heart_request = {"rtype": "nova/instance"}
-    try:
-        heart_request["name"] = body["args"]["instance_uuid"]
-    except KeyError:
-        heart_request["name"] = body["args"]["instance_id"]
+
+    release = getattr(global_conf, "os_release", None)
+    checked_keys = {"diablo": ("instance_id", ),
+                    "essex": ("instance_uuid", )}
+    checked_keys = checked_keys.get(release, ("instance_uuid", "instance_id"))
+    for key in checked_keys:
+        try:
+            heart_request["name"] = body["args"][key]
+            break
+        except KeyError:
+            pass
+    if "name" not in heart_request:
+        LOG.error("cannot find keys %s (maybe incorrect OpenStack release)" %
+                  (checked_keys, ))
+        return None
+
     child_keys = ("local_gb", "memory_mb", "vcpus")
     if method == "terminate_instance":
         heart_request["fixed"] = None
